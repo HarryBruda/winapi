@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>WINGO ADMIN — Prediction Control</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=JetBrains+Mono:wght@300;400;600&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:       #03060d;
+  --s1:       #080f1c;
+  --s2:       #0d1829;
+  --border:   #112244;
+  --border2:  #1a3060;
+  --amber:    #ffb300;
+  --cyan:     #00e5ff;
+  --green:    #00e676;
+  --red:      #ff1744;
+  --violet:   #d500f9;
+  --dim:      #3a5070;
+  --text:     #b8cce0;
+  --text2:    #6080a0;
+  --glow-a:   0 0 12px #ffb30060;
+  --glow-c:   0 0 12px #00e5ff50;
+  --glow-g:   0 0 12px #00e67650;
+  --glow-r:   0 0 12px #ff174460;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'JetBrains Mono',monospace;
+  min-height:100vh;
+  overflow-x:hidden;
+}
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;
+  background-image:
+    radial-gradient(ellipse 60% 40% at 50% 0%, #0a1f4010 0%, transparent 70%),
+    linear-gradient(rgba(0,229,255,.02) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,229,255,.02) 1px,transparent 1px);
+  background-size:100% 100%,50px 50px,50px 50px;
+  pointer-events:none;
+}
+
+/* ── LOGIN ───────────────────────────────────────────── */
+#login-screen{
+  position:fixed;inset:0;z-index:100;
+  background:var(--bg);
+  display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:20px;
+}
+.login-box{
+  background:var(--s1);
+  border:1px solid var(--border2);
+  border-radius:8px;
+  padding:36px 40px;
+  width:320px;
+  box-shadow:0 0 40px #00e5ff10;
+}
+.login-logo{
+  font-family:'Orbitron',sans-serif;
+  font-size:1.1rem;font-weight:900;
+  color:var(--amber);
+  text-shadow:var(--glow-a);
+  letter-spacing:4px;
+  text-align:center;margin-bottom:6px;
+}
+.login-sub{font-size:.65rem;color:var(--dim);text-align:center;letter-spacing:3px;margin-bottom:24px;}
+.login-box input{
+  width:100%;background:var(--bg);
+  border:1px solid var(--border2);
+  color:var(--text);
+  padding:10px 14px;border-radius:4px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:.85rem;margin-bottom:12px;
+  outline:none;transition:border-color .2s;
+}
+.login-box input:focus{border-color:var(--amber);}
+.login-btn{
+  width:100%;padding:11px;
+  background:linear-gradient(135deg,#ffb30020,#ff6f0010);
+  border:1px solid var(--amber);
+  color:var(--amber);
+  font-family:'Orbitron',monospace;
+  font-size:.7rem;letter-spacing:2px;
+  cursor:pointer;border-radius:4px;
+  transition:all .2s;
+}
+.login-btn:hover{background:linear-gradient(135deg,#ffb30035,#ff6f0020);box-shadow:var(--glow-a);}
+.login-err{color:var(--red);font-size:.7rem;text-align:center;min-height:16px;}
+
+/* ── LAYOUT ──────────────────────────────────────────── */
+#app{display:none;position:relative;z-index:1;}
+
+header{
+  background:var(--s1);
+  border-bottom:1px solid var(--border2);
+  padding:12px 24px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:50;
+}
+.hdr-logo{
+  font-family:'Orbitron',sans-serif;font-weight:900;
+  font-size:.9rem;letter-spacing:3px;
+  color:var(--amber);text-shadow:var(--glow-a);
+}
+.hdr-logo span{color:var(--text2);}
+.hdr-right{display:flex;align-items:center;gap:16px;font-size:.65rem;color:var(--dim);}
+.hdr-right b{color:var(--cyan);}
+.pulse{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--green);display:inline-block;
+  box-shadow:var(--glow-g);animation:blink 1.4s infinite;
+}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+
+main{max-width:1200px;margin:0 auto;padding:20px 16px;}
+
+/* ── MARKET PANELS ───────────────────────────────────── */
+.markets{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;margin-bottom:24px;}
+
+.mcard{
+  background:var(--s1);
+  border:1px solid var(--border);
+  border-radius:8px;overflow:hidden;
+  transition:border-color .3s;
+}
+.mcard.active-set{border-color:var(--amber);box-shadow:0 0 20px #ffb30015;}
+
+.mcard-head{
+  background:var(--s2);
+  padding:12px 16px;
+  display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid var(--border);
+}
+.mcard-title{
+  font-family:'Orbitron',sans-serif;
+  font-size:.72rem;font-weight:800;letter-spacing:2px;
+  color:var(--cyan);
+}
+.mcard-period{font-size:.6rem;color:var(--dim);}
+
+/* Timer ring */
+.timer-wrap{position:relative;width:72px;height:72px;flex-shrink:0;}
+.timer-svg{transform:rotate(-90deg);}
+.timer-track{fill:none;stroke:var(--border2);stroke-width:4;}
+.timer-fill{fill:none;stroke:var(--amber);stroke-width:4;stroke-linecap:round;transition:stroke-dashoffset .9s linear;}
+.timer-text{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  font-family:'Orbitron',sans-serif;
+  font-size:.85rem;font-weight:700;color:var(--amber);
+  line-height:1;
+}
+.timer-text small{font-size:.45rem;color:var(--dim);letter-spacing:1px;margin-top:2px;}
+
+.mcard-body{padding:14px 16px;}
+
+/* Current prediction display */
+.pred-display{
+  background:var(--bg);
+  border:1px solid var(--border);
+  border-radius:6px;
+  padding:12px 14px;
+  margin-bottom:12px;
+  display:flex;align-items:center;gap:12px;
+  min-height:58px;
+}
+.pred-ball{
+  width:44px;height:44px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Orbitron',sans-serif;font-size:1.2rem;font-weight:900;
+  flex-shrink:0;transition:all .3s;
+}
+.pred-ball.empty{background:var(--border);color:var(--dim);}
+.pred-ball.red{background:radial-gradient(circle at 35% 35%,#ff5570,var(--red));color:#fff;box-shadow:var(--glow-r);}
+.pred-ball.green{background:radial-gradient(circle at 35% 35%,#69ff9a,var(--green));color:#000;box-shadow:var(--glow-g);}
+.pred-ball.violet{background:radial-gradient(circle at 35% 35%,#ea80ff,var(--violet));color:#fff;box-shadow:0 0 12px #d500f960;}
+.pred-ball.rv{background:radial-gradient(circle at 35% 35%,#ff6090,var(--red));color:#fff;box-shadow:var(--glow-r);}
+.pred-ball.gv{background:radial-gradient(circle at 35% 35%,#69ffaa,var(--green));color:#000;box-shadow:var(--glow-g);}
+
+.pred-info{flex:1;min-width:0;}
+.pred-info .pi-label{font-size:.55rem;color:var(--dim);letter-spacing:2px;margin-bottom:4px;}
+.pred-info .pi-issue{font-size:.62rem;color:var(--cyan);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.pred-info .pi-meta{font-size:.6rem;margin-top:3px;}
+.pred-no-pred{color:var(--dim);font-size:.7rem;}
+
+/* Number picker */
+.num-picker{
+  display:grid;grid-template-columns:repeat(5,1fr);gap:6px;
+  margin-bottom:12px;
+}
+.np-btn{
+  aspect-ratio:1;border-radius:50%;
+  border:2px solid var(--border2);
+  background:var(--bg);
+  color:var(--text2);
+  font-family:'Orbitron',sans-serif;font-size:.8rem;font-weight:700;
+  cursor:pointer;transition:all .15s;
+  display:flex;align-items:center;justify-content:center;
+}
+.np-btn:hover{border-color:var(--amber);color:var(--amber);}
+.np-btn.sel{border-color:var(--amber);background:var(--amber);color:#000;box-shadow:var(--glow-a);}
+/* color indicators on balls */
+.np-btn[data-n="0"]{border-color:#ff1744aa;}
+.np-btn[data-n="1"]{border-color:#00e676aa;}
+.np-btn[data-n="2"]{border-color:#ff1744aa;}
+.np-btn[data-n="3"]{border-color:#00e676aa;}
+.np-btn[data-n="4"]{border-color:#ff1744aa;}
+.np-btn[data-n="5"]{border-color:#00e676aa;}
+.np-btn[data-n="6"]{border-color:#ff1744aa;}
+.np-btn[data-n="7"]{border-color:#00e676aa;}
+.np-btn[data-n="8"]{border-color:#ff1744aa;}
+.np-btn[data-n="9"]{border-color:#00e676aa;}
+.np-btn[data-n="0"].sel,.np-btn[data-n="2"].sel,.np-btn[data-n="4"].sel,.np-btn[data-n="6"].sel,.np-btn[data-n="8"].sel{
+  background:var(--red);border-color:var(--red);color:#fff;box-shadow:var(--glow-r);}
+.np-btn[data-n="1"].sel,.np-btn[data-n="3"].sel,.np-btn[data-n="7"].sel,.np-btn[data-n="9"].sel{
+  background:var(--green);border-color:var(--green);color:#000;box-shadow:var(--glow-g);}
+.np-btn[data-n="5"].sel{
+  background:var(--green);border-color:var(--violet);color:#000;box-shadow:var(--glow-g);}
+
+/* Action row */
+.action-row{display:flex;gap:8px;}
+.btn{
+  flex:1;padding:9px 8px;border-radius:4px;
+  font-family:'Orbitron',sans-serif;font-size:.6rem;
+  letter-spacing:1px;cursor:pointer;transition:all .2s;
+  border:1px solid;
+}
+.btn-set{
+  background:linear-gradient(135deg,#ffb30022,#ff6f0010);
+  border-color:var(--amber);color:var(--amber);
+}
+.btn-set:hover{background:linear-gradient(135deg,#ffb30040,#ff6f0020);box-shadow:var(--glow-a);}
+.btn-set:disabled{opacity:.3;cursor:not-allowed;}
+.btn-clear{
+  background:transparent;border-color:var(--border2);color:var(--dim);
+}
+.btn-clear:hover{border-color:var(--red);color:var(--red);}
+
+/* ── QUEUE SECTION ───────────────────────────────────── */
+.queue-section{
+  background:var(--s1);border:1px solid var(--border);
+  border-radius:8px;padding:16px;margin-bottom:20px;
+}
+.sec-title{
+  font-family:'Orbitron',sans-serif;font-size:.7rem;
+  font-weight:800;letter-spacing:2px;color:var(--cyan);
+  margin-bottom:14px;display:flex;align-items:center;gap:8px;
+}
+.sec-title::after{content:'';flex:1;height:1px;background:var(--border);}
+
+.queue-controls{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;}
+.queue-controls select{
+  background:var(--bg);border:1px solid var(--border2);
+  color:var(--text);padding:8px 12px;border-radius:4px;
+  font-family:'JetBrains Mono',monospace;font-size:.75rem;
+  outline:none;
+}
+.queue-input{
+  flex:1;min-width:160px;
+  background:var(--bg);border:1px solid var(--border2);
+  color:var(--text);padding:8px 12px;border-radius:4px;
+  font-family:'JetBrains Mono',monospace;font-size:.75rem;
+  outline:none;
+}
+.queue-input:focus{border-color:var(--cyan);}
+.queue-input::placeholder{color:var(--dim);}
+.btn-queue{
+  padding:8px 16px;border-radius:4px;
+  background:linear-gradient(135deg,#00e5ff15,#00bcd410);
+  border:1px solid var(--cyan);color:var(--cyan);
+  font-family:'Orbitron',sans-serif;font-size:.6rem;letter-spacing:1px;
+  cursor:pointer;transition:all .2s;white-space:nowrap;
+}
+.btn-queue:hover{box-shadow:var(--glow-c);background:linear-gradient(135deg,#00e5ff25,#00bcd420);}
+
+/* Queue items */
+.queue-list{margin-top:14px;display:flex;flex-direction:column;gap:6px;}
+.queue-item{
+  background:var(--bg);border:1px solid var(--border);
+  border-radius:5px;padding:8px 12px;
+  display:flex;align-items:center;gap:10px;
+  font-size:.68rem;
+}
+.queue-item .qi-num{
+  width:26px;height:26px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Orbitron',sans-serif;font-weight:700;font-size:.7rem;
+  flex-shrink:0;
+}
+.qi-red{background:var(--red);color:#fff;box-shadow:var(--glow-r);}
+.qi-green{background:var(--green);color:#000;box-shadow:var(--glow-g);}
+.qi-violet{background:var(--violet);color:#fff;}
+.queue-item .qi-issue{color:var(--dim);flex:1;font-size:.6rem;}
+.queue-item .qi-del{
+  background:transparent;border:none;color:var(--dim);
+  cursor:pointer;font-size:.8rem;padding:2px 6px;
+  transition:color .2s;
+}
+.queue-item .qi-del:hover{color:var(--red);}
+.qi-idx{
+  width:18px;height:18px;border-radius:3px;
+  background:var(--border);color:var(--dim);
+  font-size:.55rem;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;font-family:'Orbitron',sans-serif;
+}
+.empty-queue{color:var(--dim);font-size:.7rem;padding:8px 0;text-align:center;}
+
+/* ── HISTORY ─────────────────────────────────────────── */
+.history-section{
+  background:var(--s1);border:1px solid var(--border);
+  border-radius:8px;padding:16px;
+}
+.hist-table{width:100%;border-collapse:collapse;font-size:.7rem;}
+.hist-table th{
+  padding:7px 10px;text-align:left;
+  color:var(--dim);border-bottom:1px solid var(--border);
+  font-family:'Orbitron',sans-serif;font-size:.55rem;letter-spacing:1px;
+  font-weight:400;
+}
+.hist-table td{padding:7px 10px;border-bottom:1px solid #0a1520;}
+.hist-table tr:hover td{background:#0a1525;}
+
+.tag{
+  display:inline-block;padding:2px 7px;border-radius:3px;
+  font-size:.55rem;font-family:'Orbitron',sans-serif;letter-spacing:1px;
+}
+.tag-admin{background:#ffb30020;color:var(--amber);border:1px solid #ffb30040;}
+.tag-auto{background:#00e67620;color:var(--green);border:1px solid #00e67640;}
+
+/* ── TOAST ───────────────────────────────────────────── */
+#toast{
+  position:fixed;bottom:24px;right:24px;z-index:200;
+  padding:10px 18px;border-radius:5px;
+  font-size:.75rem;font-family:'JetBrains Mono',monospace;
+  background:var(--s2);border:1px solid var(--border2);
+  transform:translateY(80px);opacity:0;
+  transition:all .3s;pointer-events:none;
+}
+#toast.show{transform:translateY(0);opacity:1;}
+#toast.ok{border-color:var(--green);color:var(--green);}
+#toast.err{border-color:var(--red);color:var(--red);}
+
+/* scrollbar */
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">⬡ WINGO ADMIN</div>
+    <div class="login-sub">PREDICTION CONTROL PANEL</div>
+    <input type="password" id="secret-input" placeholder="Admin Secret Key" onkeydown="if(event.key==='Enter')doLogin()"/>
+    <button class="login-btn" onclick="doLogin()">AUTHENTICATE</button>
+    <div class="login-err" id="login-err"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header>
+    <div class="hdr-logo">⬡ WIN<span>GO</span> ADMIN</div>
+    <div class="hdr-right">
+      <span><span class="pulse"></span>LIVE</span>
+      <span>UTC+8: <b id="clock">--:--:--</b></span>
+      <span>Server: <b id="srv-time">—</b></span>
+    </div>
+  </header>
+
+  <main>
+    <!-- Market Cards -->
+    <div class="markets" id="market-cards"></div>
+
+    <!-- Queue Section -->
+    <div class="queue-section">
+      <div class="sec-title">QUEUE PREDICTIONS</div>
+      <div class="queue-controls">
+        <select id="q-market">
+          <option value="30s">WinGo 30S</option>
+          <option value="1min">WinGo 1Min</option>
+          <option value="3min">WinGo 3Min</option>
+        </select>
+        <input class="queue-input" id="q-numbers" placeholder="Numbers: 3,7,1,5,9 (comma separated)"/>
+        <button class="btn-queue" onclick="submitQueue()">+ QUEUE</button>
+      </div>
+      <div id="queue-lists"></div>
+    </div>
+
+    <!-- History -->
+    <div class="history-section">
+      <div class="sec-title">PREDICTION HISTORY (Last 20)</div>
+      <table class="hist-table">
+        <thead>
+          <tr><th>ISSUE</th><th>MARKET</th><th>NUMBER</th><th>COLOR</th><th>SIZE</th><th>TYPE</th></tr>
+        </thead>
+        <tbody id="hist-body">
+          <tr><td colspan="6" style="color:var(--dim);text-align:center;padding:16px;">No history yet</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── Config ────────────────────────────────────────────────────────────────
+const BASE = '';   // same origin; change to 'https://your-api.vercel.app' if separate
+const MARKETS = [
+  { key: '30s',  label: 'WinGo 30S',  seconds: 30  },
+  { key: '1min', label: 'WinGo 1Min', seconds: 60  },
+  { key: '3min', label: 'WinGo 3Min', seconds: 180 },
+];
+const COLOR_MAP = {
+  0:['red','violet'],1:['green'],2:['red'],3:['green'],4:['red'],
+  5:['green','violet'],6:['red'],7:['green'],8:['red'],9:['green'],
+};
+
+let ADMIN_SECRET = '';
+let state   = {};   // { '30s': { period, prediction, queue } }
+let timers  = {};   // countdown state
+let history = [];   // local log
+let selectedNum = {}; // { '30s': null, '1min': null, '3min': null }
+
+MARKETS.forEach(m => { selectedNum[m.key] = null; });
+
+// ── Auth ─────────────────────────────────────────────────────────────────
+async function doLogin() {
+  const val = document.getElementById('secret-input').value.trim();
+  if (!val) return;
+  // Verify by hitting /api/admin/state
+  try {
+    const r = await fetch(BASE + '/api/admin/state', {
+      headers: { 'x-admin-secret': val }
+    });
+    if (r.status === 401) {
+      document.getElementById('login-err').textContent = 'Invalid secret key';
+      return;
+    }
+    ADMIN_SECRET = val;
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    init();
+  } catch(e) {
+    // If backend unreachable, allow demo mode
+    ADMIN_SECRET = val;
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    init();
+  }
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────
+function init() {
+  renderMarketCards();
+  loadState();
+  setInterval(loadState, 5000);
+  setInterval(tickTimers, 1000);
+  setInterval(tickClock, 1000);
+  tickClock();
+}
+
+// ── Clock ─────────────────────────────────────────────────────────────────
+function tickClock() {
+  const utc8 = new Date(Date.now() + (8 - (-(new Date().getTimezoneOffset())/60)) * 3600000);
+  document.getElementById('clock').textContent = utc8.toTimeString().slice(0,8);
+}
+
+// ── API helper ────────────────────────────────────────────────────────────
+async function api(method, path, body) {
+  const opts = {
+    method,
+    headers: { 'Content-Type': 'application/json', 'x-admin-secret': ADMIN_SECRET },
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(BASE + path, opts);
+  return r.json();
+}
+
+// ── Load state ────────────────────────────────────────────────────────────
+async function loadState() {
+  try {
+    const d = await api('GET', '/api/admin/state');
+    if (d.code !== 0) return;
+    state = d.data;
+    document.getElementById('srv-time').textContent =
+      d.data?.['30s']?.currentPeriod?.serverTime?.slice(11) || '—';
+
+    // Init timers
+    MARKETS.forEach(m => {
+      const p = state[m.key]?.currentPeriod;
+      if (p) timers[m.key] = { rem: p.remainingSeconds, dur: m.seconds };
+    });
+
+    updateAllCards();
+    renderQueueLists();
+  } catch(e) {}
+}
+
+// ── Timers ────────────────────────────────────────────────────────────────
+function tickTimers() {
+  MARKETS.forEach(m => {
+    if (!timers[m.key]) return;
+    timers[m.key].rem = Math.max(0, timers[m.key].rem - 1);
+    if (timers[m.key].rem === 0) {
+      // Period ended — reload after 1.5s
+      setTimeout(loadState, 1500);
+    }
+    updateTimerUI(m.key);
+  });
+}
+
+function updateTimerUI(key) {
+  const t = timers[key];
+  if (!t) return;
+  const m = MARKETS.find(x => x.key === key);
+  const pct = t.rem / t.dur;
+  const r = 30, circ = 2 * Math.PI * r;
+  const offset = circ * (1 - pct);
+
+  const fill = document.getElementById(`tfill-${key}`);
+  const txt  = document.getElementById(`ttext-${key}`);
+  if (fill) fill.style.strokeDashoffset = offset;
+  if (txt)  txt.textContent = t.rem;
+
+  // Warn when < 10s
+  if (fill) fill.style.stroke = t.rem <= 10 ? 'var(--red)' : 'var(--amber)';
+}
+
+// ── Render market cards ───────────────────────────────────────────────────
+function renderMarketCards() {
+  const grid = document.getElementById('market-cards');
+  grid.innerHTML = '';
+  MARKETS.forEach(m => {
+    const r = 30, circ = 2 * Math.PI * r;
+    const card = document.createElement('div');
+    card.className = 'mcard';
+    card.id = `mcard-${m.key}`;
+    card.innerHTML = `
+      <div class="mcard-head">
+        <div>
+          <div class="mcard-title">${m.label}</div>
+          <div class="mcard-period" id="period-${m.key}">Loading…</div>
+        </div>
+        <div class="timer-wrap">
+          <svg class="timer-svg" viewBox="0 0 72 72" width="72" height="72">
+            <circle class="timer-track" cx="36" cy="36" r="${r}"/>
+            <circle class="timer-fill" id="tfill-${m.key}" cx="36" cy="36" r="${r}"
+              stroke-dasharray="${circ}" stroke-dashoffset="0"/>
+          </svg>
+          <div class="timer-text">
+            <span id="ttext-${m.key}">—</span>
+            <small>SEC</small>
+          </div>
+        </div>
+      </div>
+      <div class="mcard-body">
+        <div class="pred-display" id="pred-display-${m.key}">
+          <div class="pred-ball empty" id="pred-ball-${m.key}">—</div>
+          <div class="pred-info">
+            <div class="pi-label">PREDICTION</div>
+            <div class="pred-no-pred" id="pred-text-${m.key}">No prediction set</div>
+          </div>
+        </div>
+        <div class="num-picker">
+          ${[0,1,2,3,4,5,6,7,8,9].map(n=>`
+            <button class="np-btn" data-n="${n}" data-market="${m.key}"
+              onclick="selectNum('${m.key}',${n})">${n}</button>
+          `).join('')}
+        </div>
+        <div class="action-row">
+          <button class="btn btn-set" id="set-btn-${m.key}" onclick="setPrediction('${m.key}')" disabled>
+            SET PREDICTION
+          </button>
+          <button class="btn btn-clear" onclick="clearPrediction('${m.key}')">
+            CLEAR
+          </button>
+        </div>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+// ── Update card ───────────────────────────────────────────────────────────
+function updateAllCards() {
+  MARKETS.forEach(m => {
+    const s = state[m.key];
+    if (!s) return;
+    const p = s.currentPeriod;
+
+    // Period label
+    const el = document.getElementById(`period-${m.key}`);
+    if (el) el.textContent = p?.issueNumber || '—';
+
+    // Prediction display
+    const pred = s.activePrediction;
+    const card = document.getElementById(`mcard-${m.key}`);
+    const ball = document.getElementById(`pred-ball-${m.key}`);
+    const txt  = document.getElementById(`pred-text-${m.key}`);
+
+    if (pred) {
+      const num    = parseInt(pred.number);
+      const colors = pred.color.split(',');
+      const cls    = getBallClass(colors);
+      ball.className = `pred-ball ${cls}`;
+      ball.textContent = num;
+      txt.innerHTML = `
+        <div class="pi-issue">${pred.issueNumber}</div>
+        <div class="pi-meta" style="color:${getColorStyle(colors)}">${colors.join(' + ')} · ${pred.size}</div>
+      `;
+      if (card) card.classList.add('active-set');
+    } else {
+      ball.className = 'pred-ball empty';
+      ball.textContent = '—';
+      txt.innerHTML = '<div class="pred-no-pred">No prediction set</div>';
+      if (card) card.classList.remove('active-set');
+    }
+  });
+}
+
+function getBallClass(colors) {
+  if (colors.includes('red') && colors.includes('violet')) return 'rv';
+  if (colors.includes('green') && colors.includes('violet')) return 'gv';
+  if (colors.includes('red'))    return 'red';
+  if (colors.includes('green'))  return 'green';
+  return 'violet';
+}
+function getColorStyle(colors) {
+  if (colors.includes('red'))   return 'var(--red)';
+  if (colors.includes('green')) return 'var(--green)';
+  return 'var(--violet)';
+}
+
+// ── Number selection ──────────────────────────────────────────────────────
+function selectNum(market, num) {
+  selectedNum[market] = num;
+  // Update picker UI
+  document.querySelectorAll(`.np-btn[data-market="${market}"]`).forEach(b => {
+    b.classList.toggle('sel', parseInt(b.dataset.n) === num);
+  });
+  const btn = document.getElementById(`set-btn-${market}`);
+  if (btn) btn.disabled = false;
+}
+
+// ── Set prediction ────────────────────────────────────────────────────────
+async function setPrediction(market) {
+  const num = selectedNum[market];
+  if (num === null) return;
+  try {
+    const d = await api('POST', '/api/admin/predict', {
+      duration: market,
+      number:   num,
+    });
+    if (d.code === 0) {
+      toast('✓ Prediction set: ' + market.toUpperCase() + ' → ' + num, 'ok');
+      addHistory(d.data, market, 'ADMIN');
+      await loadState();
+    } else {
+      toast('Error: ' + d.msg, 'err');
+    }
+  } catch(e) {
+    toast('Network error', 'err');
+  }
+}
+
+// ── Clear prediction ──────────────────────────────────────────────────────
+async function clearPrediction(market) {
+  try {
+    await api('DELETE', `/api/admin/clear/${market}`);
+    toast('Cleared ' + market.toUpperCase(), 'ok');
+    selectedNum[market] = null;
+    document.querySelectorAll(`.np-btn[data-market="${market}"]`).forEach(b => b.classList.remove('sel'));
+    const btn = document.getElementById(`set-btn-${market}`);
+    if (btn) btn.disabled = true;
+    await loadState();
+  } catch(e) { toast('Error', 'err'); }
+}
+
+// ── Queue ─────────────────────────────────────────────────────────────────
+async function submitQueue() {
+  const market = document.getElementById('q-market').value;
+  const raw    = document.getElementById('q-numbers').value;
+  const nums   = raw.split(',').map(x => parseInt(x.trim())).filter(n => !isNaN(n) && n >= 0 && n <= 9);
+  if (!nums.length) { toast('Enter valid numbers (0-9)', 'err'); return; }
+
+  try {
+    const d = await api('POST', '/api/admin/queue', { duration: market, predictions: nums });
+    if (d.code === 0) {
+      toast(`✓ Queued ${nums.length} predictions for ${market.toUpperCase()}`, 'ok');
+      document.getElementById('q-numbers').value = '';
+      await loadState();
+    }
+  } catch(e) { toast('Error', 'err'); }
+}
+
+// ── Queue list render ─────────────────────────────────────────────────────
+function renderQueueLists() {
+  const container = document.getElementById('queue-lists');
+  let html = '';
+  MARKETS.forEach(m => {
+    const queue = state[m.key]?.queue || [];
+    if (!queue.length) return;
+    html += `<div style="margin-top:12px">
+      <div style="font-size:.6rem;color:var(--dim);letter-spacing:2px;margin-bottom:6px;">
+        ${m.label} — ${queue.length} queued
+      </div>
+      <div class="queue-list">`;
+    queue.slice(0, 8).forEach((item, idx) => {
+      const colors = (item.color || '').split(',');
+      const cls    = colors.includes('green') ? 'qi-green' : colors.includes('violet') && !colors.includes('red') ? 'qi-violet' : 'qi-red';
+      html += `<div class="queue-item">
+        <div class="qi-idx">${idx + 1}</div>
+        <div class="qi-num ${cls}">${item.number}</div>
+        <div class="qi-issue">${item.issueNumber}</div>
+        <span style="font-size:.6rem;color:${colors.includes('green')?'var(--green)':'var(--red)'}">
+          ${colors.join('+')}
+        </span>
+        <button class="qi-del" onclick="removeQueued('${m.key}',${idx})" title="Remove">✕</button>
+      </div>`;
+    });
+    if (queue.length > 8) html += `<div class="empty-queue">+${queue.length - 8} more</div>`;
+    html += '</div></div>';
+  });
+  if (!html) html = '<div class="empty-queue" style="margin-top:10px">No queued predictions</div>';
+  container.innerHTML = html;
+}
+
+async function removeQueued(market, idx) {
+  // Rebuild queue without that index
+  const queue = state[market]?.queue || [];
+  const newNums = queue.filter((_,i) => i !== idx).map(x => parseInt(x.number));
+  // Clear and re-queue
+  await api('DELETE', `/api/admin/clear/${market}`);
+  if (newNums.length) {
+    await api('POST', '/api/admin/queue', { duration: market, predictions: newNums });
+  }
+  toast('Removed', 'ok');
+  await loadState();
+}
+
+// ── History ───────────────────────────────────────────────────────────────
+function addHistory(item, market, type) {
+  history.unshift({ ...item, market, type, ts: new Date().toLocaleTimeString() });
+  if (history.length > 20) history.pop();
+  renderHistory();
+}
+
+function renderHistory() {
+  const tbody = document.getElementById('hist-body');
+  if (!history.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="color:var(--dim);text-align:center;padding:16px">No history yet</td></tr>';
+    return;
+  }
+  const colors = (item) => (item.color||'').split(',');
+  tbody.innerHTML = history.map(item => {
+    const cls = getBallClass(colors(item));
+    return `<tr>
+      <td style="color:var(--dim);font-size:.62rem">${item.issueNumber}</td>
+      <td style="color:var(--cyan)">${item.market?.toUpperCase()}</td>
+      <td><span class="pred-ball ${cls}" style="width:24px;height:24px;font-size:.65rem;display:inline-flex;align-items:center;justify-content:center;border-radius:50%">${item.number}</span></td>
+      <td style="font-size:.65rem">${item.color}</td>
+      <td style="font-size:.65rem">${item.size}</td>
+      <td><span class="tag ${item.type==='ADMIN'?'tag-admin':'tag-auto'}">${item.type}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────
+function toast(msg, type = 'ok') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `show ${type}`;
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => el.className = '', 2800);
+}
+
+// ── Enter key on login ───────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('secret-input').focus();
+});
+</script>
+</body>
+</html>
