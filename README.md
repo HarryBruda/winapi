@@ -1,28 +1,74 @@
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fexamples%2Ftree%2Fmain%2Fpython%2Fflask3&demo-title=Flask%203%20%2B%20Vercel&demo-description=Use%20Flask%203%20on%20Vercel%20with%20Serverless%20Functions%20using%20the%20Python%20Runtime.&demo-url=https%3A%2F%2Fflask3-python-template.vercel.app%2F&demo-image=https://assets.vercel.com/image/upload/v1669994156/random/flask.png)
+# WinGo Clone API — Vercel Deploy Guide
 
-# Flask + Vercel
+## Vercel এ Deploy করো (Free)
 
-This example shows how to use Flask 3 on Vercel with Serverless Functions using the [Python Runtime](https://vercel.com/docs/concepts/functions/serverless-functions/runtimes/python).
-
-## Demo
-
-https://flask-python-template.vercel.app/
-
-## How it Works
-
-This example uses the Web Server Gateway Interface (WSGI) with Flask to enable handling requests on Vercel with Serverless Functions.
-
-## Running Locally
+### Method 1: GitHub দিয়ে (সহজ)
 
 ```bash
-npm i -g vercel
-vercel dev
+# 1. GitHub এ repo বানাও
+# 2. এই files গুলো push করো
+# 3. vercel.com এ গিয়ে GitHub repo connect করো
+# 4. Deploy!
 ```
 
-Your Flask application is now available at `http://localhost:3000`.
+### Method 2: Vercel CLI দিয়ে (Termux থেকে)
 
-## One-Click Deploy
+```bash
+# Node.js install করো
+pkg install nodejs
 
-Deploy the example using [Vercel](https://vercel.com?utm_source=github&utm_medium=readme&utm_campaign=vercel-examples):
+# Vercel CLI install করো
+npm install -g vercel
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fexamples%2Ftree%2Fmain%2Fpython%2Fflask3&demo-title=Flask%203%20%2B%20Vercel&demo-description=Use%20Flask%203%20on%20Vercel%20with%20Serverless%20Functions%20using%20the%20Python%20Runtime.&demo-url=https%3A%2F%2Fflask3-python-template.vercel.app%2F&demo-image=https://assets.vercel.com/image/upload/v1669994156/random/flask.png)
+# Project folder এ যাও
+cd wingo-clone
+
+# Deploy করো
+vercel
+
+# Production deploy
+vercel --prod
+```
+
+## Project Structure
+
+```
+wingo-clone/
+├── vercel.json          ← Vercel config
+├── requirements.txt     ← Python packages
+├── api/
+│   └── index.py         ← FastAPI backend (all routes)
+└── public/
+    └── index.html       ← Frontend dashboard
+```
+
+## API Endpoints
+
+| Endpoint | কী করে |
+|----------|--------|
+| `GET /api/games` | সব game list |
+| `GET /api/history/WinGo/30S` | History (real বা generated) |
+| `GET /api/history/WinGo/30S?source=real` | Real data only |
+| `GET /api/history/WinGo/30S?source=fake` | Generated data |
+| `GET /api/current/WinGo/30S` | Current issue + countdown |
+| `GET /api/draw/WinGo/30S` | নিজস্ব draw (random) |
+| `GET /api/stats/WinGo/30S` | Color & number stats |
+| `GET /api/proxy/WinGo/30S` | ar-lottery01.com থেকে real data |
+| `GET /api/health` | Health check |
+
+## Color Rules
+
+- 0 → Red + Violet
+- 1,3,7,9 → Green
+- 2,4,6,8 → Red  
+- 5 → Green + Violet
+
+## Features
+
+✅ নিজস্ব Draw System (random number generation)
+✅ Real data proxy (ar-lottery01.com থেকে)
+✅ Fallback to generated data
+✅ Color & number statistics
+✅ Live countdown timer
+✅ Auto-draw mode
+✅ Vercel serverless compatible
