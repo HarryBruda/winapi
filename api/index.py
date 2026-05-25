@@ -1,346 +1,254 @@
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 import httpx
-import random
 import time
 import math
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
-app = FastAPI(title="WinGo Clone API", version="1.0.0")
+app = FastAPI()
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
-# CORS - সব origin থেকে access দাও
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# ============================================
-# CONFIG
-# ============================================
 DRAW_BASE = "https://draw.ar-lottery01.com"
-GAME_TYPES = ["WinGo", "K3", "5D", "TrxWin"]
-DURATIONS  = ["30S", "1Min", "3Min", "5Min", "10Min"]
 
-HEADERS = {
-    "Accept": "application/json, */*",
-    "User-Agent": "Mozilla/5.0 (Linux; Android 12; SM-G991B) AppleWebKit/537.36",
+MARKETS = {
+    "WinGo_30S":  {"game": "WinGo", "duration": "30S",   "seconds": 30},
+    "WinGo_1M":   {"game": "WinGo", "duration": "1Min",  "seconds": 60},
+    "WinGo_3M":   {"game": "WinGo", "duration": "3Min",  "seconds": 180},
+    "WinGo_5M":   {"game": "WinGo", "duration": "5Min",  "seconds": 300},
+    "WinGo_10M":  {"game": "WinGo", "duration": "10Min", "seconds": 600},
+    "K3_1M":      {"game": "K3",    "duration": "1Min",  "seconds": 60},
+    "K3_3M":      {"game": "K3",    "duration": "3Min",  "seconds": 180},
+    "K3_5M":      {"game": "K3",    "duration": "5Min",  "seconds": 300},
+    "5D_1M":      {"game": "5D",    "duration": "1Min",  "seconds": 60},
+    "5D_3M":      {"game": "5D",    "duration": "3Min",  "seconds": 180},
+    "5D_5M":      {"game": "5D",    "duration": "5Min",  "seconds": 300},
+    "TrxWin_1M":  {"game": "TrxWin","duration": "1Min",  "seconds": 60},
+    "TrxWin_3M":  {"game": "TrxWin","duration": "3Min",  "seconds": 180},
+    "TrxWin_5M":  {"game": "TrxWin","duration": "5Min",  "seconds": 300},
 }
 
-# ============================================
-# HELPER FUNCTIONS
-# ============================================
+# ─────────────────────────────────────────────
+# PERIOD ID — ar-lottery01.com এর exact format
+# issueNumber = YYYYMMDD + "10" + 8-digit-sequence
+# sequence = দিনের শুরু থেকে কত নম্বর period চলছে
+# ─────────────────────────────────────────────
+def get_period_info(seconds: int):
+    # UTC+8 timezone (ar-lottery01.com এর server time)
+    tz8 = timezone(timedelta(hours=8))
+    now = datetime.now(tz8)
+    
+    # দিনের শুরু থেকে কত সেকেন্ড গেছে
+    day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    elapsed = int((now - day_start).total_seconds())
+    
+    # বর্তমান period number (1 থেকে শুরু)
+    current_period = elapsed // seconds + 1
+    
+    # Period শুরু ও শেষ time
+    period_start_elapsed = (current_period - 1) * seconds
+    period_end_elapsed = current_period * seconds
+    
+    period_start = day_start + timedelta(seconds=period_start_elapsed)
+    period_end = day_start + timedelta(seconds=period_end_elapsed)
+    
+    # Remaining seconds
+    remaining = int((period_end - now).total_seconds())
+    if remaining < 0:
+        remaining = 0
 
-def get_color(number: int) -> str:
-    """WinGo color logic: 0=red+violet, 5=green+violet, even=red, odd=green"""
-    if number == 0:
-        return "red,violet"
-    elif number == 5:
-        return "green,violet"
-    elif number % 2 == 0:
-        return "red"
-    else:
-        return "green"
-
-def generate_issue_number(duration: str) -> str:
-    """Issue number generate করো based on current time"""
-    now = datetime.now(timezone.utc)
+    # Issue number — YYYYMMDD + 10 + 8-digit sequence
     date_str = now.strftime("%Y%m%d")
-    
-    duration_seconds = {
-        "30S": 30, "1Min": 60, "3Min": 180, "5Min": 300, "10Min": 600
-    }
-    secs = duration_seconds.get(duration, 60)
-    period = int(time.time() / secs)
-    
-    return f"{date_str}10{str(period).zfill(8)}"
+    issue_number = f"{date_str}10{str(current_period).zfill(8)}"
 
-def generate_result() -> dict:
-    """Random WinGo result generate করো"""
-    number = random.randint(0, 9)
-    color = get_color(number)
-    big_small = "Big" if number >= 5 else "Small"
+    # Previous issue number
+    prev_period = current_period - 1
+    prev_issue = f"{date_str}10{str(prev_period).zfill(8)}" if prev_period > 0 else None
+
     return {
-        "number": str(number),
-        "color": color,
-        "premium": str(number),
-        "bigSmall": big_small,
-        "sum": 0
+        "issueNumber": issue_number,
+        "prevIssueNumber": prev_issue,
+        "periodNumber": current_period,
+        "timeRemaining": remaining,
+        "durationSeconds": seconds,
+        "periodStart": period_start.isoformat(),
+        "periodEnd": period_end.isoformat(),
+        "serverTime": int(now.timestamp() * 1000),
+        "date": date_str,
     }
 
-def generate_history(count: int = 10, duration: str = "30S") -> list:
-    """Fake history list generate করো"""
-    results = []
-    now = int(time.time())
-    
-    duration_seconds = {
-        "30S": 30, "1Min": 60, "3Min": 180, "5Min": 300, "10Min": 600
-    }
-    secs = duration_seconds.get(duration, 60)
-    
-    for i in range(count):
-        period = int((now - i * secs) / secs)
-        date_str = datetime.now(timezone.utc).strftime("%Y%m%d")
-        issue = f"{date_str}10{str(period).zfill(8)}"
-        result = generate_result()
-        result["issueNumber"] = issue
-        results.append(result)
-    
-    return results
 
-async def fetch_upstream(game: str, duration: str, endpoint: str = "GetHistoryIssuePage") -> dict:
-    """আসল ar-lottery01.com থেকে data fetch করো"""
-    url = f"{DRAW_BASE}/{game}/{game}_{duration}/{endpoint}.json"
+# ─────────────────────────────────────────────
+# FETCH from Alibaba OSS
+# ─────────────────────────────────────────────
+async def fetch_oss(game: str, duration: str):
+    # duration mapping: 1Min → 1M, 3Min → 3M etc (draw server uses M not Min)
+    dur_map = {"30S": "30S", "1Min": "1M", "3Min": "3M", "5Min": "5M", "10Min": "10M"}
+    dur = dur_map.get(duration, duration)
+    url = f"{DRAW_BASE}/{game}/{game}_{dur}/GetHistoryIssuePage.json?ts={int(time.time()*1000)}"
     try:
         async with httpx.AsyncClient(timeout=8.0) as client:
-            resp = await client.get(url, headers=HEADERS)
-            if resp.status_code == 200:
-                return {"success": True, "data": resp.json(), "url": url}
+            r = await client.get(url, headers={
+                "Accept": "*/*",
+                "User-Agent": "Mozilla/5.0 (Linux; Android 12)",
+                "Origin": "https://dkwin9.com",
+                "Referer": "https://dkwin9.com/"
+            })
+            if r.status_code == 200:
+                return {"ok": True, "data": r.json(), "url": url}
     except Exception as e:
         pass
-    return {"success": False, "url": url}
+    return {"ok": False, "url": url}
 
 
-# ============================================
-# ROOT
-# ============================================
+# ─────────────────────────────────────────────
+# ROUTES
+# ─────────────────────────────────────────────
+
 @app.get("/api")
-async def root():
-    return {
-        "code": 0,
-        "msg": "WinGo Clone API is running",
-        "version": "1.0.0",
-        "endpoints": [
-            "/api/games",
-            "/api/history/{game}/{duration}",
-            "/api/current/{game}/{duration}",
-            "/api/stats/{game}/{duration}",
-            "/api/draw/{game}/{duration}",
-            "/api/proxy/{game}/{duration}",
-        ]
-    }
+def root():
+    return {"code": 0, "msg": "WinGo API Running", "markets": list(MARKETS.keys())}
 
 
-# ============================================
-# GAME LIST
-# ============================================
-@app.get("/api/games")
-async def get_games():
+# Current period info — period ID, countdown, etc
+@app.get("/api/current/{market}")
+def current_period(market: str):
+    m = MARKETS.get(market)
+    if not m:
+        raise HTTPException(400, f"Invalid market. Valid: {list(MARKETS.keys())}")
+    info = get_period_info(m["seconds"])
     return {
         "code": 0,
         "msg": "Success",
-        "data": {
-            "games": GAME_TYPES,
-            "durations": DURATIONS,
-            "combinations": [
-                {"game": g, "duration": d}
-                for g in GAME_TYPES for d in DURATIONS
-            ]
-        }
+        "market": market,
+        "game": m["game"],
+        "duration": m["duration"],
+        "data": info
     }
 
 
-# ============================================
-# PROXY — আসল site থেকে data আনো
-# ============================================
-@app.get("/api/proxy/{game}/{duration}")
-async def proxy_history(game: str, duration: str):
-    """ar-lottery01.com থেকে real data proxy করো"""
-    if game not in GAME_TYPES:
-        raise HTTPException(400, f"Invalid game. Use: {', '.join(GAME_TYPES)}")
-    if duration not in DURATIONS:
-        raise HTTPException(400, f"Invalid duration. Use: {', '.join(DURATIONS)}")
+# All markets current period — একসাথে সব market এর period দেখো
+@app.get("/api/current")
+def all_current():
+    result = {}
+    for market, m in MARKETS.items():
+        info = get_period_info(m["seconds"])
+        result[market] = {
+            "issueNumber": info["issueNumber"],
+            "timeRemaining": info["timeRemaining"],
+            "durationSeconds": m["seconds"],
+            "periodNumber": info["periodNumber"],
+        }
+    return {"code": 0, "msg": "Success", "data": result, "serverTime": int(time.time() * 1000)}
 
-    result = await fetch_upstream(game, duration)
-    if not result["success"]:
+
+# History — ar-lottery01.com থেকে real data
+@app.get("/api/history/{market}")
+async def get_history(market: str, page: int = Query(1)):
+    m = MARKETS.get(market)
+    if not m:
+        raise HTTPException(400, f"Invalid market. Valid: {list(MARKETS.keys())}")
+    
+    result = await fetch_oss(m["game"], m["duration"])
+    if not result["ok"]:
         raise HTTPException(502, "Upstream fetch failed")
-
-    return {
-        "code": 0,
-        "msg": "Success (proxied)",
-        "source": result["url"],
-        "game": game,
-        "duration": duration,
-        "data": result["data"].get("data", result["data"])
-    }
-
-
-# ============================================
-# HISTORY — নিজের generated data
-# ============================================
-@app.get("/api/history/{game}/{duration}")
-async def get_history(
-    game: str,
-    duration: str,
-    page: int = Query(1, ge=1),
-    pageSize: int = Query(10, ge=1, le=100),
-    source: str = Query("auto", description="auto | real | fake")
-):
-    if game not in GAME_TYPES:
-        raise HTTPException(400, f"Invalid game. Use: {', '.join(GAME_TYPES)}")
-    if duration not in DURATIONS:
-        raise HTTPException(400, f"Invalid duration. Use: {', '.join(DURATIONS)}")
-
-    # auto mode: আগে real try করো, fail করলে fake দাও
-    if source in ("auto", "real"):
-        upstream = await fetch_upstream(game, duration)
-        if upstream["success"]:
-            data = upstream["data"].get("data", {})
-            return {
-                "code": 0,
-                "msg": "Success",
-                "game": game,
-                "duration": duration,
-                "dataSource": "real",
-                "data": data
-            }
-
-    # Fake generated data
-    history = generate_history(count=pageSize, duration=duration)
-    total = 500
-    total_pages = math.ceil(total / pageSize)
+    
+    data = result["data"]
+    lst = data.get("data", {}).get("list", [])
 
     return {
         "code": 0,
         "msg": "Success",
-        "game": game,
-        "duration": duration,
-        "dataSource": "generated",
+        "market": market,
+        "game": m["game"],
+        "duration": m["duration"],
+        "sourceUrl": result["url"],
         "data": {
-            "list": history,
-            "pageNo": page,
-            "totalPage": total_pages,
-            "totalCount": total
+            "list": lst,
+            "pageNo": data.get("data", {}).get("pageNo", 1),
+            "totalPage": data.get("data", {}).get("totalPage", 1),
+            "totalCount": data.get("data", {}).get("totalCount", len(lst)),
         }
     }
 
 
-# ============================================
-# CURRENT ISSUE — latest issue কী চলছে
-# ============================================
-@app.get("/api/current/{game}/{duration}")
-async def get_current(game: str, duration: str):
-    if game not in GAME_TYPES:
-        raise HTTPException(400, f"Invalid game")
-    if duration not in DURATIONS:
-        raise HTTPException(400, f"Invalid duration")
+# Latest result — শুধু সর্বশেষ result
+@app.get("/api/latest/{market}")
+async def get_latest(market: str):
+    m = MARKETS.get(market)
+    if not m:
+        raise HTTPException(400, "Invalid market")
 
-    issue_number = generate_issue_number(duration)
-    
-    duration_seconds = {
-        "30S": 30, "1Min": 60, "3Min": 180, "5Min": 300, "10Min": 600
-    }
-    secs = duration_seconds.get(duration, 60)
-    now = time.time()
-    period_start = int(now / secs) * secs
-    time_remaining = int(period_start + secs - now)
+    result = await fetch_oss(m["game"], m["duration"])
+    period = get_period_info(m["seconds"])
 
-    return {
-        "code": 0,
-        "msg": "Success",
-        "game": game,
-        "duration": duration,
-        "data": {
-            "issueNumber": issue_number,
-            "timeRemaining": time_remaining,
-            "durationSeconds": secs,
-            "serverTime": int(now * 1000)
-        }
-    }
-
-
-# ============================================
-# DRAW — নিজস্ব random draw করো
-# ============================================
-@app.get("/api/draw/{game}/{duration}")
-async def do_draw(game: str, duration: str):
-    """নিজস্ব draw system — random result generate করো"""
-    if game not in GAME_TYPES:
-        raise HTTPException(400, "Invalid game")
-    if duration not in DURATIONS:
-        raise HTTPException(400, "Invalid duration")
-
-    issue_number = generate_issue_number(duration)
-    result = generate_result()
-
-    return {
-        "code": 0,
-        "msg": "Draw complete",
-        "game": game,
-        "duration": duration,
-        "data": {
-            "issueNumber": issue_number,
-            "result": result,
-            "drawnAt": int(time.time() * 1000)
-        }
-    }
-
-
-# ============================================
-# STATS — color ও number frequency
-# ============================================
-@app.get("/api/stats/{game}/{duration}")
-async def get_stats(game: str, duration: str):
-    if game not in GAME_TYPES:
-        raise HTTPException(400, "Invalid game")
-    if duration not in DURATIONS:
-        raise HTTPException(400, "Invalid duration")
-
-    # upstream থেকে real data নেওয়ার চেষ্টা
-    upstream = await fetch_upstream(game, duration)
-    
-    if upstream["success"]:
-        lst = upstream["data"].get("data", {}).get("list", [])
-        data_source = "real"
+    if result["ok"]:
+        lst = result["data"].get("data", {}).get("list", [])
+        latest = lst[0] if lst else None
     else:
-        lst = generate_history(50, duration)
-        data_source = "generated"
+        latest = None
 
-    color_count: dict = {}
-    number_count: dict = {}
-    big_small = {"Big": 0, "Small": 0}
+    return {
+        "code": 0,
+        "msg": "Success",
+        "market": market,
+        "data": {
+            "latest": latest,
+            "current": {
+                "issueNumber": period["issueNumber"],
+                "timeRemaining": period["timeRemaining"],
+            }
+        }
+    }
+
+
+# Stats
+@app.get("/api/stats/{market}")
+async def get_stats(market: str):
+    m = MARKETS.get(market)
+    if not m:
+        raise HTTPException(400, "Invalid market")
+
+    result = await fetch_oss(m["game"], m["duration"])
+    if not result["ok"]:
+        raise HTTPException(502, "Fetch failed")
+
+    lst = result["data"].get("data", {}).get("list", [])
+    color_freq: dict = {}
+    number_freq: dict = {}
+    big = small = 0
 
     for item in lst:
-        # Color count
         for c in str(item.get("color", "")).split(","):
             c = c.strip()
             if c:
-                color_count[c] = color_count.get(c, 0) + 1
-        # Number count
+                color_freq[c] = color_freq.get(c, 0) + 1
         n = str(item.get("number", ""))
-        number_count[n] = number_count.get(n, 0) + 1
-        # Big/Small
+        number_freq[n] = number_freq.get(n, 0) + 1
         if n.isdigit():
             if int(n) >= 5:
-                big_small["Big"] += 1
+                big += 1
             else:
-                big_small["Small"] += 1
+                small += 1
 
     return {
         "code": 0,
         "msg": "Success",
-        "game": game,
-        "duration": duration,
-        "dataSource": data_source,
+        "market": market,
         "totalRecords": len(lst),
         "stats": {
-            "colorFrequency": color_count,
-            "numberFrequency": number_count,
-            "bigSmall": big_small,
-            "latestResult": lst[0] if lst else None
+            "colorFrequency": color_freq,
+            "numberFrequency": number_freq,
+            "bigSmall": {"Big": big, "Small": small},
+            "latestResult": lst[0] if lst else None,
         }
     }
 
 
-# ============================================
-# HEALTH CHECK
-# ============================================
 @app.get("/api/health")
-async def health():
+def health():
+    tz8 = timezone(timedelta(hours=8))
     return {
         "status": "ok",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "service": "WinGo Clone API"
+        "serverTime": datetime.now(tz8).isoformat(),
+        "utcTime": datetime.now(timezone.utc).isoformat(),
     }
