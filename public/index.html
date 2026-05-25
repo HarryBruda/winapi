@@ -2,531 +2,405 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>WinGo — Live Draw</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>WinGo</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600&display=swap');
-
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Roboto+Mono:wght@400;700&display=swap');
 :root {
-  --bg: #060610;
-  --surface: #0d0d1f;
-  --card: #13132b;
-  --border: #1e1e42;
-  --accent: #6c5ce7;
-  --accent2: #fd79a8;
-  --green: #00b894;
-  --red: #d63031;
-  --violet: #a29bfe;
-  --gold: #fdcb6e;
-  --text: #dfe6e9;
-  --muted: #636e72;
-  --mono: 'Orbitron', monospace;
-  --sans: 'Inter', sans-serif;
+  --bg: #0f0f23;
+  --surface: #1a1a35;
+  --card: #22223f;
+  --border: #2e2e55;
+  --green: #00e676;
+  --red: #ff5252;
+  --violet: #ce93d8;
+  --gold: #ffd54f;
+  --blue: #448aff;
+  --text: #e8eaf6;
+  --muted: #7986cb;
+  --mono: 'Roboto Mono', monospace;
+  --sans: 'Roboto', sans-serif;
 }
-
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: var(--bg); color: var(--text); font-family: var(--sans); min-height: 100vh; overflow-x: hidden; }
+body { background: var(--bg); color: var(--text); font-family: var(--sans); min-height: 100vh; }
 
-/* HEADER */
-header {
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  padding: 0 1.5rem;
-  height: 60px;
-  display: flex; align-items: center; justify-content: space-between;
-  position: sticky; top: 0; z-index: 100;
-}
-.logo { font-family: var(--mono); font-size: 1.2rem; font-weight: 900; letter-spacing: 2px; }
-.logo .g { color: var(--green); }
-.logo .r { color: var(--red); }
-.logo .v { color: var(--violet); }
-.live-badge { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--green); font-family: var(--mono); letter-spacing: 1px; }
-.live-badge::before { content:''; width:7px; height:7px; border-radius:50%; background:var(--green); animation: blink 1s infinite; }
-@keyframes blink { 0%,100%{opacity:1}50%{opacity:0.2} }
+/* TOP NAV */
+.nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 16px; height: 52px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+.nav-logo { font-family: var(--mono); font-weight: 700; font-size: 18px; letter-spacing: 2px; }
+.nav-logo span { color: var(--gold); }
+.nav-time { font-family: var(--mono); font-size: 12px; color: var(--muted); }
 
-/* TABS */
-.tabs-wrap { display: flex; gap: 0; border-bottom: 1px solid var(--border); background: var(--surface); padding: 0 1.5rem; overflow-x: auto; }
-.tab-btn { padding: 14px 20px; font-size: 13px; font-weight: 500; color: var(--muted); border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; transition: all 0.2s; }
-.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
-.tab-btn:hover { color: var(--text); }
-.tab-content { display: none; }
-.tab-content.active { display: block; }
+/* MARKET TABS */
+.market-tabs { display: flex; overflow-x: auto; background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 8px; scrollbar-width: none; }
+.market-tabs::-webkit-scrollbar { display: none; }
+.mtab { padding: 12px 16px; font-size: 13px; font-weight: 500; color: var(--muted); border: none; background: none; cursor: pointer; white-space: nowrap; border-bottom: 2px solid transparent; transition: all 0.2s; }
+.mtab.active { color: var(--gold); border-bottom-color: var(--gold); }
 
-/* LAYOUT */
-.main { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
-.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
-@media(max-width: 700px) { .grid-2,.grid-3 { grid-template-columns: 1fr; } }
+/* MAIN */
+.main { max-width: 480px; margin: 0 auto; padding: 12px; }
 
-/* CARD */
-.card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 1.25rem; }
-.card-title { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 1rem; font-family: var(--mono); }
+/* PERIOD CARD */
+.period-card { background: linear-gradient(135deg, #1a1a3e, #2a1a4e); border: 1px solid var(--border); border-radius: 16px; padding: 16px; margin-bottom: 12px; }
+.period-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.period-title { font-size: 13px; color: var(--muted); font-weight: 500; }
+.period-num { font-family: var(--mono); font-size: 11px; color: var(--gold); background: rgba(255,213,79,0.1); padding: 4px 10px; border-radius: 20px; }
 
-/* CONTROLS */
-.controls { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 1.25rem; }
-select, .btn {
-  background: var(--surface); border: 1px solid var(--border);
-  color: var(--text); padding: 9px 16px; border-radius: 8px;
-  font-family: var(--sans); font-size: 13px; cursor: pointer; transition: all 0.2s;
-}
-select:hover, .btn:hover { border-color: var(--accent); }
-.btn-primary { background: var(--accent); border-color: var(--accent); color: white; font-weight: 600; }
-.btn-primary:hover { opacity: 0.85; }
-.btn-green { background: rgba(0,184,148,0.15); border-color: var(--green); color: var(--green); font-weight: 600; }
-.btn-red { background: rgba(214,48,49,0.15); border-color: var(--red); color: var(--red); font-weight: 600; }
-.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.countdown-row { display: flex; align-items: center; justify-content: space-between; }
+.countdown-left { }
+.countdown-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+.countdown-val { font-family: var(--mono); font-size: 40px; font-weight: 700; color: var(--gold); line-height: 1; }
+.countdown-sub { font-size: 11px; color: var(--muted); margin-top: 4px; font-family: var(--mono); }
 
-/* COUNTDOWN */
-.countdown-wrap { text-align: center; padding: 1.5rem 0; }
-.countdown-label { font-size: 11px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px; }
-.countdown-num { font-family: var(--mono); font-size: 3.5rem; font-weight: 900; color: var(--gold); line-height: 1; }
-.issue-label { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-top: 10px; }
+.progress-ring { position: relative; width: 70px; height: 70px; }
+.progress-ring svg { transform: rotate(-90deg); }
+.ring-bg { fill: none; stroke: var(--border); stroke-width: 4; }
+.ring-fg { fill: none; stroke: var(--gold); stroke-width: 4; stroke-linecap: round; transition: stroke-dashoffset 1s linear; }
+.ring-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-family: var(--mono); font-size: 14px; font-weight: 700; color: var(--gold); }
 
-/* RESULT BALL */
-.result-ball {
-  width: 80px; height: 80px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-family: var(--mono); font-size: 2rem; font-weight: 900;
-  margin: 0 auto 1rem;
-  transition: all 0.3s;
-  box-shadow: 0 0 30px rgba(0,0,0,0.5);
-}
-.ball-green { background: radial-gradient(circle at 35% 35%, #00cec9, var(--green)); color: white; box-shadow: 0 0 20px rgba(0,184,148,0.4); }
-.ball-red { background: radial-gradient(circle at 35% 35%, #e17055, var(--red)); color: white; box-shadow: 0 0 20px rgba(214,48,49,0.4); }
-.ball-violet { background: radial-gradient(circle at 35% 35%, #b2bec3, var(--violet)); color: white; box-shadow: 0 0 20px rgba(162,155,254,0.4); }
-.ball-spin { animation: spin-ball 0.5s ease-in-out; }
-@keyframes spin-ball { 0%{transform:scale(0) rotate(-180deg)}100%{transform:scale(1) rotate(0deg)} }
+/* LAST RESULTS */
+.last-results { margin-top: 14px; }
+.lr-label { font-size: 11px; color: var(--muted); margin-bottom: 8px; }
+.lr-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.lr-ball { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 13px; font-weight: 700; flex-shrink: 0; }
+.lb-green { background: radial-gradient(circle at 35% 35%, #69f0ae, var(--green)); color: #003300; }
+.lb-red { background: radial-gradient(circle at 35% 35%, #ff8a80, var(--red)); color: #330000; }
+.lb-violet { background: radial-gradient(circle at 35% 35%, #e1bee7, var(--violet)); color: #1a0033; }
 
-/* COLOR PILL */
-.pill { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; text-transform: uppercase; margin: 2px; }
-.pill-green { background: rgba(0,184,148,0.15); color: var(--green); border: 1px solid rgba(0,184,148,0.3); }
-.pill-red { background: rgba(214,48,49,0.15); color: var(--red); border: 1px solid rgba(214,48,49,0.3); }
-.pill-violet { background: rgba(162,155,254,0.15); color: var(--violet); border: 1px solid rgba(162,155,254,0.3); }
+/* STATS ROW */
+.stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+.stat-box { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px; text-align: center; }
+.stat-box-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+.stat-box-val { font-family: var(--mono); font-size: 22px; font-weight: 700; }
 
-/* NUMBER BADGE */
-.num-badge { display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;font-weight:700;font-size:14px;font-family:var(--mono); }
-.nb-green { background:rgba(0,184,148,0.15);color:var(--green); }
-.nb-red { background:rgba(214,48,49,0.15);color:var(--red); }
-.nb-violet { background:rgba(162,155,254,0.15);color:var(--violet); }
+/* HISTORY TABLE */
+.history-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; margin-bottom: 12px; }
+.hc-header { padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.hc-title { font-size: 14px; font-weight: 500; }
+.refresh-btn { background: rgba(68,138,255,0.1); border: 1px solid rgba(68,138,255,0.3); color: var(--blue); padding: 5px 12px; border-radius: 8px; font-size: 12px; cursor: pointer; transition: all 0.2s; }
+.refresh-btn:hover { background: rgba(68,138,255,0.2); }
+.refresh-btn:disabled { opacity: 0.4; }
 
-/* TABLE */
-.tbl-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; }
-th { padding: 10px 14px; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid var(--border); text-align: left; font-family: var(--mono); }
-td { padding: 11px 14px; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.04); }
-tr:hover td { background: rgba(108,92,231,0.05); }
+th { padding: 10px 14px; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); text-align: left; }
+td { padding: 10px 14px; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.04); }
 tr:last-child td { border-bottom: none; }
+.issue-td { font-family: var(--mono); font-size: 10px; color: var(--muted); }
 
-/* STAT CARDS */
-.stat-val { font-family: var(--mono); font-size: 2.2rem; font-weight: 900; margin-top: 4px; }
+/* COLOR PILLS */
+.cpill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; text-transform: uppercase; margin: 1px; }
+.cp-green { background: rgba(0,230,118,0.15); color: var(--green); }
+.cp-red { background: rgba(255,82,82,0.15); color: var(--red); }
+.cp-violet { background: rgba(206,147,216,0.15); color: var(--violet); }
 
-/* BAR CHART */
-.bar-row { display:flex;align-items:center;gap:10px;margin-bottom:8px; }
-.bar-lbl { font-size:12px;font-family:var(--mono);width:55px;text-align:right;color:var(--muted); }
-.bar-track { flex:1;height:8px;background:rgba(255,255,255,0.05);border-radius:4px;overflow:hidden; }
-.bar-fill { height:100%;border-radius:4px;transition:width 0.6s ease; }
-.bar-cnt { font-size:11px;color:var(--muted);font-family:var(--mono);width:20px; }
+/* BIG/SMALL badge */
+.bs-badge { font-size: 11px; padding: 2px 8px; border-radius: 8px; }
+.bs-big { background: rgba(255,82,82,0.1); color: var(--red); }
+.bs-small { background: rgba(0,230,118,0.1); color: var(--green); }
 
-/* SOURCE BADGE */
-.source-tag { display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:3px 10px;border-radius:20px;margin-bottom:12px; }
-.src-real { background:rgba(0,184,148,0.1);color:var(--green);border:1px solid rgba(0,184,148,0.3); }
-.src-fake { background:rgba(108,92,231,0.1);color:var(--accent);border:1px solid rgba(108,92,231,0.3); }
+/* ALL MARKETS */
+.all-markets { background: var(--card); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; margin-bottom: 12px; }
+.am-header { padding: 14px 16px; border-bottom: 1px solid var(--border); font-size: 14px; font-weight: 500; }
+.am-row { display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.am-row:last-child { border-bottom: none; }
+.am-name { flex: 1; font-size: 13px; font-weight: 500; }
+.am-issue { font-family: var(--mono); font-size: 10px; color: var(--muted); flex: 2; }
+.am-remaining { font-family: var(--mono); font-size: 14px; font-weight: 700; width: 50px; text-align: right; }
+.am-remaining.urgent { color: var(--red); }
+.am-remaining.normal { color: var(--gold); }
+.am-remaining.safe { color: var(--green); }
 
-/* LOADING */
-.loading { text-align:center;padding:2.5rem;color:var(--muted);font-size:13px; }
-.spinner { display:inline-block;width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite; }
-@keyframes spin { to{transform:rotate(360deg)} }
+/* SPINNER */
+.loading { text-align: center; padding: 30px; color: var(--muted); font-size: 13px; }
+.spin { display: inline-block; width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--gold); border-radius: 50%; animation: spin 0.7s linear infinite; margin-bottom: 8px; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
-/* API DOCS */
-.endpoint-row { background:var(--surface);border-radius:8px;padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;font-family:var(--mono);font-size:12px; }
-.method { padding:3px 8px;border-radius:4px;font-size:11px;font-weight:700; }
-.m-get { background:rgba(0,184,148,0.15);color:var(--green); }
-.ep-path { color:var(--text);flex:1; }
-.ep-desc { color:var(--muted);font-family:var(--sans);font-size:11px; }
+/* CHART */
+.mini-chart { padding: 0 16px 16px; }
+.chart-title { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; padding: 12px 0 8px; }
+.bar-r { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.bar-l { font-size: 11px; font-family: var(--mono); color: var(--muted); width: 20px; text-align: right; }
+.bar-t { flex: 1; height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden; }
+.bar-f { height: 100%; border-radius: 3px; transition: width 0.5s; }
+.bar-c { font-size: 10px; color: var(--muted); font-family: var(--mono); width: 16px; }
 </style>
 </head>
 <body>
 
-<header>
-  <div class="logo"><span class="g">W</span><span class="r">i</span><span class="v">n</span>Go API</div>
-  <div class="live-badge">LIVE</div>
-</header>
-
-<div class="tabs-wrap">
-  <button class="tab-btn active" onclick="switchTab('draw')">🎯 Live Draw</button>
-  <button class="tab-btn" onclick="switchTab('history')">📋 History</button>
-  <button class="tab-btn" onclick="switchTab('stats')">📊 Stats</button>
-  <button class="tab-btn" onclick="switchTab('proxy')">🔗 Proxy (Real Data)</button>
-  <button class="tab-btn" onclick="switchTab('docs')">📖 API Docs</button>
+<div class="nav">
+  <div class="nav-logo">Win<span>Go</span></div>
+  <div class="nav-time" id="navTime">--:--:--</div>
 </div>
 
-<!-- ======================== TAB: DRAW ======================== -->
-<div class="tab-content active" id="tab-draw">
-<div class="main">
-  <div class="controls">
-    <select id="d-game"><option value="WinGo">WinGo</option><option value="K3">K3</option><option value="5D">5D</option><option value="TrxWin">TrxWin</option></select>
-    <select id="d-dur"><option value="30S">30 Seconds</option><option value="1Min">1 Min</option><option value="3Min">3 Min</option><option value="5Min">5 Min</option><option value="10Min">10 Min</option></select>
-    <button class="btn btn-primary" onclick="doDraw()">🎲 Draw Now</button>
-    <button class="btn" id="autoDrawBtn" onclick="toggleAutoDraw()">Auto: OFF</button>
-  </div>
+<div class="market-tabs" id="marketTabs"></div>
 
-  <div class="grid-2">
-    <div class="card">
-      <div class="card-title">Current Issue</div>
-      <div class="countdown-wrap">
+<div class="main">
+
+  <!-- Period Card -->
+  <div class="period-card">
+    <div class="period-header">
+      <div class="period-title" id="marketTitle">WinGo 30S</div>
+      <div class="period-num" id="issueNumber">Loading...</div>
+    </div>
+    <div class="countdown-row">
+      <div class="countdown-left">
         <div class="countdown-label">Next Draw In</div>
-        <div class="countdown-num" id="countdown">--</div>
-        <div class="issue-label" id="currentIssue">Loading...</div>
+        <div class="countdown-val" id="cdVal">--</div>
+        <div class="countdown-sub" id="cdSub">Period --</div>
+      </div>
+      <div class="progress-ring">
+        <svg width="70" height="70" viewBox="0 0 70 70">
+          <circle class="ring-bg" cx="35" cy="35" r="30"/>
+          <circle class="ring-fg" id="ringFg" cx="35" cy="35" r="30"
+            stroke-dasharray="188.5" stroke-dashoffset="0"/>
+        </svg>
+        <div class="ring-text" id="ringText">--</div>
       </div>
     </div>
-
-    <div class="card">
-      <div class="card-title">Latest Result</div>
-      <div id="resultBall" class="result-ball ball-green">?</div>
-      <div style="text-align:center;">
-        <div id="resultColors" style="margin-bottom:8px;">—</div>
-        <div style="font-size:12px;color:var(--muted);font-family:var(--mono);" id="resultIssue">—</div>
-      </div>
+    <div class="last-results">
+      <div class="lr-label">Last Results</div>
+      <div class="lr-row" id="lastBalls"></div>
     </div>
   </div>
 
-  <div class="card" style="margin-top:1rem;">
-    <div class="card-title">Recent Draws</div>
-    <div id="recentDraws" class="loading"><span class="spinner"></span></div>
-  </div>
-</div>
-</div>
-
-<!-- ======================== TAB: HISTORY ======================== -->
-<div class="tab-content" id="tab-history">
-<div class="main">
-  <div class="controls">
-    <select id="h-game"><option value="WinGo">WinGo</option><option value="K3">K3</option><option value="5D">5D</option><option value="TrxWin">TrxWin</option></select>
-    <select id="h-dur"><option value="30S">30 Seconds</option><option value="1Min">1 Min</option><option value="3Min">3 Min</option><option value="5Min">5 Min</option><option value="10Min">10 Min</option></select>
-    <select id="h-source"><option value="auto">Auto (Real → Fake)</option><option value="real">Real Data Only</option><option value="fake">Generated Data</option></select>
-    <button class="btn btn-primary" onclick="loadHistory()">Load History</button>
-  </div>
-
-  <div class="card">
-    <div class="card-title">History Results</div>
-    <div id="historyTable" class="loading"><span class="spinner"></span></div>
-  </div>
-</div>
-</div>
-
-<!-- ======================== TAB: STATS ======================== -->
-<div class="tab-content" id="tab-stats">
-<div class="main">
-  <div class="controls">
-    <select id="s-game"><option value="WinGo">WinGo</option><option value="K3">K3</option><option value="5D">5D</option><option value="TrxWin">TrxWin</option></select>
-    <select id="s-dur"><option value="30S">30 Seconds</option><option value="1Min">1 Min</option><option value="3Min">3 Min</option><option value="5Min">5 Min</option><option value="10Min">10 Min</option></select>
-    <button class="btn btn-primary" onclick="loadStats()">Load Stats</button>
-  </div>
-
-  <div class="grid-3" id="statCards" style="margin-bottom:1rem;">
-    <div class="card"><div class="card-title">Green</div><div class="stat-val" id="st-green" style="color:var(--green)">—</div></div>
-    <div class="card"><div class="card-title">Red</div><div class="stat-val" id="st-red" style="color:var(--red)">—</div></div>
-    <div class="card"><div class="card-title">Violet</div><div class="stat-val" id="st-violet" style="color:var(--violet)">—</div></div>
-  </div>
-
-  <div class="grid-2">
-    <div class="card">
-      <div class="card-title">Number Frequency</div>
-      <div id="numChart"></div>
+  <!-- Stats -->
+  <div class="stats-row">
+    <div class="stat-box">
+      <div class="stat-box-label">Green</div>
+      <div class="stat-box-val" id="stGreen" style="color:var(--green)">-</div>
     </div>
-    <div class="card">
-      <div class="card-title">Color Distribution</div>
-      <div id="colorChart"></div>
+    <div class="stat-box">
+      <div class="stat-box-label">Red</div>
+      <div class="stat-box-val" id="stRed" style="color:var(--red)">-</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-box-label">Violet</div>
+      <div class="stat-box-val" id="stViolet" style="color:var(--violet)">-</div>
     </div>
   </div>
-</div>
-</div>
 
-<!-- ======================== TAB: PROXY ======================== -->
-<div class="tab-content" id="tab-proxy">
-<div class="main">
-  <div class="controls">
-    <select id="p-game"><option value="WinGo">WinGo</option><option value="K3">K3</option><option value="5D">5D</option><option value="TrxWin">TrxWin</option></select>
-    <select id="p-dur"><option value="30S">30 Seconds</option><option value="1Min">1 Min</option><option value="3Min">3 Min</option><option value="5Min">5 Min</option><option value="10Min">10 Min</option></select>
-    <button class="btn btn-primary" onclick="loadProxy()">Fetch Real Data</button>
-  </div>
-  <div class="card">
-    <div class="card-title">Real Data from ar-lottery01.com</div>
-    <div id="proxyResult" class="loading"><span class="spinner"></span></div>
-  </div>
-</div>
-</div>
-
-<!-- ======================== TAB: DOCS ======================== -->
-<div class="tab-content" id="tab-docs">
-<div class="main">
-  <div class="card" style="margin-bottom:1rem;">
-    <div class="card-title">API Endpoints</div>
-    <div class="endpoint-row"><span class="method m-get">GET</span><span class="ep-path">/api/games</span><span class="ep-desc">All available games & durations</span></div>
-    <div class="endpoint-row"><span class="method m-get">GET</span><span class="ep-path">/api/history/{game}/{duration}?source=auto</span><span class="ep-desc">History list (real or generated)</span></div>
-    <div class="endpoint-row"><span class="method m-get">GET</span><span class="ep-path">/api/current/{game}/{duration}</span><span class="ep-desc">Current issue & countdown</span></div>
-    <div class="endpoint-row"><span class="method m-get">GET</span><span class="ep-path">/api/draw/{game}/{duration}</span><span class="ep-desc">Own draw system (random result)</span></div>
-    <div class="endpoint-row"><span class="method m-get">GET</span><span class="ep-path">/api/stats/{game}/{duration}</span><span class="ep-desc">Color & number frequency stats</span></div>
-    <div class="endpoint-row"><span class="method m-get">GET</span><span class="ep-path">/api/proxy/{game}/{duration}</span><span class="ep-desc">Proxy real data from ar-lottery01.com</span></div>
-    <div class="endpoint-row"><span class="method m-get">GET</span><span class="ep-path">/api/health</span><span class="ep-desc">Server health check</span></div>
-  </div>
-
-  <div class="card">
-    <div class="card-title">Color Rules</div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">
-      <span class="pill pill-red">0 = Red + Violet</span>
-      <span class="pill pill-green">1 = Green</span>
-      <span class="pill pill-red">2 = Red</span>
-      <span class="pill pill-green">3 = Green</span>
-      <span class="pill pill-red">4 = Red</span>
-      <span class="pill pill-violet">5 = Green + Violet</span>
-      <span class="pill pill-red">6 = Red</span>
-      <span class="pill pill-green">7 = Green</span>
-      <span class="pill pill-red">8 = Red</span>
-      <span class="pill pill-green">9 = Green</span>
+  <!-- History Table -->
+  <div class="history-card">
+    <div class="hc-header">
+      <span class="hc-title">History</span>
+      <button class="refresh-btn" id="refreshBtn" onclick="loadData()">Refresh</button>
     </div>
+    <div id="historyBody"><div class="loading"><div class="spin"></div><br/>Loading...</div></div>
+    <div class="mini-chart" id="numChart"></div>
   </div>
-</div>
+
+  <!-- All Markets -->
+  <div class="all-markets">
+    <div class="am-header">All Markets</div>
+    <div id="allMarketsBody"><div class="loading"><div class="spin"></div></div></div>
+  </div>
+
 </div>
 
 <script>
 const BASE = window.location.origin;
-let autoDrawInterval = null;
-let isAutoDraw = false;
-let countdownInterval = null;
-let recentResults = [];
 
-// ============ TAB SWITCH ============
-function switchTab(name) {
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-  event.target.classList.add('active');
-  document.getElementById('tab-' + name).classList.add('active');
+const MARKETS = {
+  "WinGo_30S":  {label:"WinGo 30S", seconds:30},
+  "WinGo_1M":   {label:"WinGo 1M",  seconds:60},
+  "WinGo_3M":   {label:"WinGo 3M",  seconds:180},
+  "WinGo_5M":   {label:"WinGo 5M",  seconds:300},
+  "WinGo_10M":  {label:"WinGo 10M", seconds:600},
+  "K3_1M":      {label:"K3 1M",     seconds:60},
+  "K3_3M":      {label:"K3 3M",     seconds:180},
+  "K3_5M":      {label:"K3 5M",     seconds:300},
+  "TrxWin_1M":  {label:"TrxWin 1M", seconds:60},
+  "TrxWin_3M":  {label:"TrxWin 3M", seconds:180},
+};
+
+let currentMarket = "WinGo_30S";
+let countdownVal = 0;
+let durationSecs = 30;
+let historyList = [];
+
+// Build tabs
+const tabsEl = document.getElementById('marketTabs');
+Object.entries(MARKETS).forEach(([key, m]) => {
+  const btn = document.createElement('button');
+  btn.className = 'mtab' + (key === currentMarket ? ' active' : '');
+  btn.textContent = m.label;
+  btn.onclick = () => switchMarket(key);
+  tabsEl.appendChild(btn);
+});
+
+function switchMarket(key) {
+  currentMarket = key;
+  document.querySelectorAll('.mtab').forEach((b,i) => {
+    b.classList.toggle('active', Object.keys(MARKETS)[i] === key);
+  });
+  document.getElementById('marketTitle').textContent = MARKETS[key].label;
+  document.getElementById('historyBody').innerHTML = '<div class="loading"><div class="spin"></div><br/>Loading...</div>';
+  loadData();
 }
 
-// ============ DRAW ============
-async function doDraw() {
-  const game = document.getElementById('d-game').value;
-  const dur = document.getElementById('d-dur').value;
+// Clock
+function updateClock() {
+  const now = new Date();
+  document.getElementById('navTime').textContent = now.toLocaleTimeString('en-US', {hour12: false});
+}
+setInterval(updateClock, 1000);
+updateClock();
 
-  try {
-    const res = await fetch(`${BASE}/api/draw/${game}/${dur}`);
-    const json = await res.json();
-    if (json.code !== 0) return;
+// Countdown tick
+function tickCountdown() {
+  if (countdownVal > 0) countdownVal--;
+  const m = Math.floor(countdownVal / 60);
+  const s = countdownVal % 60;
+  const display = m > 0 ? `${m}:${String(s).padStart(2,'0')}` : String(s).padStart(2,'0');
+  document.getElementById('cdVal').textContent = display;
+  document.getElementById('ringText').textContent = display;
 
-    const result = json.data.result;
-    const num = parseInt(result.number);
-    const colors = result.color.split(',');
-    const mainColor = colors.includes('violet') && colors.length > 1 ? colors[0] : colors[0];
+  // Ring progress
+  const circumference = 188.5;
+  const pct = countdownVal / durationSecs;
+  const offset = circumference * (1 - pct);
+  document.getElementById('ringFg').style.strokeDashoffset = offset;
 
-    const ball = document.getElementById('resultBall');
-    ball.textContent = result.number;
-    ball.className = 'result-ball ball-' + mainColor + ' ball-spin';
-    setTimeout(() => ball.classList.remove('ball-spin'), 500);
+  // Color urgency
+  const color = countdownVal <= 5 ? 'var(--red)' : countdownVal <= 10 ? 'var(--gold)' : 'var(--green)';
+  document.getElementById('ringFg').style.stroke = color;
+  document.getElementById('cdVal').style.color = color;
+  document.getElementById('ringText').style.color = color;
+}
+setInterval(tickCountdown, 1000);
 
-    document.getElementById('resultColors').innerHTML = colors.map(c =>
-      `<span class="pill pill-${c}">${c}</span>`
-    ).join('');
-    document.getElementById('resultIssue').textContent = json.data.issueNumber;
-
-    // Recent list
-    recentResults.unshift({...result, issueNumber: json.data.issueNumber});
-    if (recentResults.length > 10) recentResults.pop();
-    renderRecentDraws();
-  } catch(e) {}
+function getBallClass(color) {
+  if (!color) return 'lb-red';
+  if (color.includes('violet')) return 'lb-violet';
+  if (color.includes('green')) return 'lb-green';
+  return 'lb-red';
 }
 
-function renderRecentDraws() {
-  if (recentResults.length === 0) {
-    document.getElementById('recentDraws').innerHTML = '<div class="loading">Draw করলে এখানে দেখাবে</div>';
-    return;
-  }
-  const rows = recentResults.map(r => {
-    const colors = r.color.split(',');
-    const cls = colors.includes('violet') ? 'nb-violet' : colors[0] === 'green' ? 'nb-green' : 'nb-red';
-    return `<tr>
-      <td><span style="font-family:var(--mono);font-size:11px;color:var(--muted);">${r.issueNumber}</span></td>
-      <td><span class="num-badge ${cls}">${r.number}</span></td>
-      <td>${colors.map(c=>`<span class="pill pill-${c}">${c}</span>`).join('')}</td>
-      <td><span style="color:var(--muted);font-size:12px;">${r.bigSmall || '—'}</span></td>
-    </tr>`;
+function renderBalls(list) {
+  return list.slice(0, 8).map(item => {
+    const cls = getBallClass(item.color);
+    return `<div class="lr-ball ${cls}">${item.number}</div>`;
   }).join('');
-  document.getElementById('recentDraws').innerHTML = `
-    <div class="tbl-wrap"><table>
-      <thead><tr><th>Issue</th><th>Number</th><th>Color</th><th>Big/Small</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table></div>`;
 }
 
-function toggleAutoDraw() {
-  isAutoDraw = !isAutoDraw;
-  const btn = document.getElementById('autoDrawBtn');
-  if (isAutoDraw) {
-    btn.textContent = 'Auto: ON';
-    btn.style.borderColor = 'var(--green)';
-    btn.style.color = 'var(--green)';
-    doDraw();
-    autoDrawInterval = setInterval(doDraw, 5000);
-  } else {
-    btn.textContent = 'Auto: OFF';
-    btn.style.borderColor = '';
-    btn.style.color = '';
-    clearInterval(autoDrawInterval);
-  }
+function renderColorPills(colorStr) {
+  return (colorStr || '').split(',').map(c => {
+    c = c.trim();
+    return `<span class="cpill cp-${c}">${c}</span>`;
+  }).join('');
 }
 
-async function updateCountdown() {
-  const game = document.getElementById('d-game').value;
-  const dur = document.getElementById('d-dur').value;
-  try {
-    const res = await fetch(`${BASE}/api/current/${game}/${dur}`);
-    const json = await res.json();
-    if (json.code !== 0) return;
-    document.getElementById('currentIssue').textContent = 'Issue: ' + json.data.issueNumber;
-
-    let remaining = json.data.timeRemaining;
-    clearInterval(countdownInterval);
-    countdownInterval = setInterval(() => {
-      remaining--;
-      if (remaining <= 0) {
-        remaining = json.data.durationSeconds;
-      }
-      const m = Math.floor(remaining / 60);
-      const s = remaining % 60;
-      document.getElementById('countdown').textContent = m > 0
-        ? `${m}:${String(s).padStart(2,'0')}`
-        : String(s).padStart(2, '0');
-    }, 1000);
-  } catch(e) {}
-}
-
-// ============ HISTORY ============
-async function loadHistory() {
-  const game = document.getElementById('h-game').value;
-  const dur = document.getElementById('h-dur').value;
-  const src = document.getElementById('h-source').value;
-
-  document.getElementById('historyTable').innerHTML = '<div class="loading"><span class="spinner"></span></div>';
+async function loadData() {
+  const btn = document.getElementById('refreshBtn');
+  btn.disabled = true;
 
   try {
-    const res = await fetch(`${BASE}/api/history/${game}/${dur}?source=${src}&pageSize=20`);
-    const json = await res.json();
-    if (json.code !== 0) { document.getElementById('historyTable').innerHTML = '<div class="loading">Error</div>'; return; }
-
-    const list = json.data?.list || [];
-    const srcTag = json.dataSource === 'real'
-      ? '<span class="source-tag src-real">✓ Real Data</span>'
-      : '<span class="source-tag src-fake">⚡ Generated</span>';
-
-    const rows = list.map(item => {
-      const colors = (item.color || '').split(',');
-      const cls = colors.includes('violet') ? 'nb-violet' : colors[0] === 'green' ? 'nb-green' : 'nb-red';
-      return `<tr>
-        <td><span style="font-family:var(--mono);font-size:11px;color:var(--muted);">${item.issueNumber}</span></td>
-        <td><span class="num-badge ${cls}">${item.number}</span></td>
-        <td>${colors.map(c=>`<span class="pill pill-${c}">${c}</span>`).join('')}</td>
-        <td><span style="font-family:var(--mono);color:var(--muted);font-size:12px;">${item.premium || '—'}</span></td>
-      </tr>`;
-    }).join('');
-
-    document.getElementById('historyTable').innerHTML = `
-      ${srcTag}
-      <div class="tbl-wrap"><table>
-        <thead><tr><th>Issue</th><th>Number</th><th>Color</th><th>Premium</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table></div>`;
-  } catch(e) {
-    document.getElementById('historyTable').innerHTML = '<div class="loading">Error fetching data</div>';
-  }
-}
-
-// ============ STATS ============
-async function loadStats() {
-  const game = document.getElementById('s-game').value;
-  const dur = document.getElementById('s-dur').value;
-
-  try {
-    const res = await fetch(`${BASE}/api/stats/${game}/${dur}`);
-    const json = await res.json();
-    if (json.code !== 0) return;
-
-    const cf = json.stats.colorFrequency;
-    const nf = json.stats.numberFrequency;
-
-    document.getElementById('st-green').textContent = cf.green || 0;
-    document.getElementById('st-red').textContent = cf.red || 0;
-    document.getElementById('st-violet').textContent = cf.violet || 0;
-
-    // Number chart
-    const maxN = Math.max(...Object.values(nf), 1);
-    document.getElementById('numChart').innerHTML = [0,1,2,3,4,5,6,7,8,9].map(n => {
-      const cnt = nf[String(n)] || 0;
-      const pct = Math.round(cnt / maxN * 100);
-      const color = n===0||n===5 ? 'var(--violet)' : n%2===0 ? 'var(--red)' : 'var(--green)';
-      return `<div class="bar-row">
-        <div class="bar-lbl">${n}</div>
-        <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color};"></div></div>
-        <div class="bar-cnt">${cnt}</div>
-      </div>`;
-    }).join('');
-
-    // Color chart
-    const maxC = Math.max(...Object.values(cf), 1);
-    const cColors = { green:'var(--green)', red:'var(--red)', violet:'var(--violet)' };
-    document.getElementById('colorChart').innerHTML = Object.entries(cf)
-      .sort((a,b)=>b[1]-a[1])
-      .map(([c,cnt]) => {
-        const pct = Math.round(cnt / maxC * 100);
-        return `<div class="bar-row">
-          <div class="bar-lbl">${c}</div>
-          <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${cColors[c]||'var(--accent)'};"></div></div>
-          <div class="bar-cnt">${cnt}</div>
-        </div>`;
-      }).join('');
-  } catch(e) {}
-}
-
-// ============ PROXY ============
-async function loadProxy() {
-  const game = document.getElementById('p-game').value;
-  const dur = document.getElementById('p-dur').value;
-  document.getElementById('proxyResult').innerHTML = '<div class="loading"><span class="spinner"></span> ar-lottery01.com থেকে fetch করছি...</div>';
-
-  try {
-    const res = await fetch(`${BASE}/api/proxy/${game}/${dur}`);
-    const json = await res.json();
-
-    if (json.code !== 0) {
-      document.getElementById('proxyResult').innerHTML = '<div class="loading">Real data unavailable</div>';
-      return;
+    // Fetch current period info
+    const cRes = await fetch(`${BASE}/api/current/${currentMarket}`);
+    const cJson = await cRes.json();
+    if (cJson.code === 0) {
+      const d = cJson.data;
+      countdownVal = d.timeRemaining;
+      durationSecs = d.durationSeconds;
+      document.getElementById('issueNumber').textContent = d.issueNumber;
+      document.getElementById('cdSub').textContent = `Period ${d.periodNumber}`;
     }
 
-    const list = json.data?.list || [];
-    const rows = list.map(item => {
-      const colors = (item.color || '').split(',');
-      const cls = colors.includes('violet') ? 'nb-violet' : colors[0] === 'green' ? 'nb-green' : 'nb-red';
-      return `<tr>
-        <td><span style="font-family:var(--mono);font-size:11px;color:var(--muted);">${item.issueNumber}</span></td>
-        <td><span class="num-badge ${cls}">${item.number}</span></td>
-        <td>${colors.map(c=>`<span class="pill pill-${c}">${c}</span>`).join('')}</td>
-      </tr>`;
-    }).join('');
+    // Fetch history
+    const hRes = await fetch(`${BASE}/api/history/${currentMarket}`);
+    const hJson = await hRes.json();
+    if (hJson.code === 0) {
+      historyList = hJson.data.list || [];
 
-    document.getElementById('proxyResult').innerHTML = `
-      <span class="source-tag src-real">✓ Live from ar-lottery01.com</span>
-      <div class="tbl-wrap"><table>
-        <thead><tr><th>Issue</th><th>Number</th><th>Color</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table></div>`;
+      // Last balls
+      document.getElementById('lastBalls').innerHTML = renderBalls(historyList);
+
+      // Stats
+      let green = 0, red = 0, violet = 0;
+      const numFreq = {};
+      historyList.forEach(item => {
+        const colors = (item.color || '').split(',');
+        colors.forEach(c => {
+          c = c.trim();
+          if (c === 'green') green++;
+          else if (c === 'red') red++;
+          else if (c === 'violet') violet++;
+        });
+        const n = item.number;
+        numFreq[n] = (numFreq[n] || 0) + 1;
+      });
+      document.getElementById('stGreen').textContent = green;
+      document.getElementById('stRed').textContent = red;
+      document.getElementById('stViolet').textContent = violet;
+
+      // History table
+      const rows = historyList.map(item => {
+        const bs = parseInt(item.number) >= 5 ? 'Big' : 'Small';
+        const bsCls = bs === 'Big' ? 'bs-big' : 'bs-small';
+        const ballCls = getBallClass(item.color);
+        return `<tr>
+          <td class="issue-td">${item.issueNumber}</td>
+          <td><span class="lr-ball ${ballCls}" style="width:28px;height:28px;font-size:12px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;">${item.number}</span></td>
+          <td>${renderColorPills(item.color)}</td>
+          <td><span class="bs-badge ${bsCls}">${bs}</span></td>
+        </tr>`;
+      }).join('');
+      document.getElementById('historyBody').innerHTML = `
+        <table>
+          <thead><tr><th>Issue</th><th>No.</th><th>Color</th><th>Size</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>`;
+
+      // Number chart
+      const maxN = Math.max(...Object.values(numFreq), 1);
+      const chartHtml = '<div class="chart-title">Number Frequency</div>' +
+        [0,1,2,3,4,5,6,7,8,9].map(n => {
+          const cnt = numFreq[String(n)] || 0;
+          const pct = Math.round(cnt / maxN * 100);
+          const col = n===0||n===5 ? 'var(--violet)' : n%2===0 ? 'var(--red)' : 'var(--green)';
+          return `<div class="bar-r">
+            <div class="bar-l">${n}</div>
+            <div class="bar-t"><div class="bar-f" style="width:${pct}%;background:${col};"></div></div>
+            <div class="bar-c">${cnt}</div>
+          </div>`;
+        }).join('');
+      document.getElementById('numChart').innerHTML = chartHtml;
+    }
   } catch(e) {
-    document.getElementById('proxyResult').innerHTML = '<div class="loading">Error: ' + e.message + '</div>';
+    document.getElementById('historyBody').innerHTML = `<div class="loading">Error: ${e.message}</div>`;
+  } finally {
+    btn.disabled = false;
   }
 }
 
-// ============ INIT ============
-renderRecentDraws();
-updateCountdown();
-setInterval(updateCountdown, 30000);
+// All markets
+async function loadAllMarkets() {
+  try {
+    const res = await fetch(`${BASE}/api/current`);
+    const json = await res.json();
+    if (json.code !== 0) return;
+    const data = json.data;
+    const rows = Object.entries(data).map(([key, m]) => {
+      const label = MARKETS[key]?.label || key;
+      const r = m.timeRemaining;
+      const urgency = r <= 5 ? 'urgent' : r <= 15 ? 'normal' : 'safe';
+      const display = r >= 60 ? `${Math.floor(r/60)}:${String(r%60).padStart(2,'0')}` : String(r);
+      return `<div class="am-row">
+        <div class="am-name">${label}</div>
+        <div class="am-issue">${m.issueNumber}</div>
+        <div class="am-remaining ${urgency}">${display}s</div>
+      </div>`;
+    }).join('');
+    document.getElementById('allMarketsBody').innerHTML = rows;
+  } catch(e) {}
+}
+
+// Init
+loadData();
+loadAllMarkets();
+setInterval(loadAllMarkets, 5000);
+setInterval(() => {
+  if (countdownVal <= 1) loadData();
+}, 1000);
 </script>
 </body>
 </html>
