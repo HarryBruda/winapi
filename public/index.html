@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>WinGo — Live Draw</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600&display=swap');
+
+:root {
+  --bg: #060610;
+  --surface: #0d0d1f;
+  --card: #13132b;
+  --border: #1e1e42;
+  --accent: #6c5ce7;
+  --accent2: #fd79a8;
+  --green: #00b894;
+  --red: #d63031;
+  --violet: #a29bfe;
+  --gold: #fdcb6e;
+  --text: #dfe6e9;
+  --muted: #636e72;
+  --mono: 'Orbitron', monospace;
+  --sans: 'Inter', sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--sans); min-height: 100vh; overflow-x: hidden; }
+
+/* HEADER */
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 1.5rem;
+  height: 60px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+}
+.logo { font-family: var(--mono); font-size: 1.2rem; font-weight: 900; letter-spacing: 2px; }
+.logo .g { color: var(--green); }
+.logo .r { color: var(--red); }
+.logo .v { color: var(--violet); }
+.live-badge { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--green); font-family: var(--mono); letter-spacing: 1px; }
+.live-badge::before { content:''; width:7px; height:7px; border-radius:50%; background:var(--green); animation: blink 1s infinite; }
+@keyframes blink { 0%,100%{opacity:1}50%{opacity:0.2} }
+
+/* TABS */
+.tabs-wrap { display: flex; gap: 0; border-bottom: 1px solid var(--border); background: var(--surface); padding: 0 1.5rem; overflow-x: auto; }
+.tab-btn { padding: 14px 20px; font-size: 13px; font-weight: 500; color: var(--muted); border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; transition: all 0.2s; }
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab-btn:hover { color: var(--text); }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* LAYOUT */
+.main { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+@media(max-width: 700px) { .grid-2,.grid-3 { grid-template-columns: 1fr; } }
+
+/* CARD */
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 1.25rem; }
+.card-title { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 1rem; font-family: var(--mono); }
+
+/* CONTROLS */
+.controls { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 1.25rem; }
+select, .btn {
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text); padding: 9px 16px; border-radius: 8px;
+  font-family: var(--sans); font-size: 13px; cursor: pointer; transition: all 0.2s;
+}
+select:hover, .btn:hover { border-color: var(--accent); }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: white; font-weight: 600; }
+.btn-primary:hover { opacity: 0.85; }
+.btn-green { background: rgba(0,184,148,0.15); border-color: var(--green); color: var(--green); font-weight: 600; }
+.btn-red { background: rgba(214,48,49,0.15); border-color: var(--red); color: var(--red); font-weight: 600; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* COUNTDOWN */
+.countdown-wrap { text-align: center; padding: 1.5rem 0; }
+.countdown-label { font-size: 11px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px; }
+.countdown-num { font-family: var(--mono); font-size: 3.5rem; font-weight: 900; color: var(--gold); line-height: 1; }
+.issue-label { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-top: 10px; }
+
+/* RESULT BALL */
+.result-ball {
+  width: 80px; height: 80px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 2rem; font-weight: 900;
+  margin: 0 auto 1rem;
+  transition: all 0.3s;
+  box-shadow: 0 0 30px rgba(0,0,0,0.5);
+}
+.ball-green { background: radial-gradient(circle at 35% 35%, #00cec9, var(--green)); color: white; box-shadow: 0 0 20px rgba(0,184,148,0.4); }
+.ball-red { background: radial-gradient(circle at 35% 35%, #e17055, var(--red)); color: white; box-shadow: 0 0 20px rgba(214,48,49,0.4); }
+.ball-violet { background: radial-gradient(circle at 35% 35%, #b2bec3, var(--violet)); color: white; box-shadow: 0 0 20px rgba(162,155,254,0.4); }
+.ball-spin { animation: spin-ball 0.5s ease-in-out; }
+@keyframes spin-ball { 0%{transform:scale(0) rotate(-180deg)}100%{transform:scale(1) rotate(0deg)} }
+
+/* COLOR PILL */
+.pill { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; text-transform: uppercase; margin: 2px; }
+.pill-green { background: rgba(0,184,148,0.15); color: var(--green); border: 1px solid rgba(0,184,148,0.3); }
+.pill-red { background: rgba(214,48,49,0.15); color: var(--red); border: 1px solid rgba(214,48,49,0.3); }
+.pill-violet { background: rgba(162,155,254,0.15); color: var(--violet); border: 1px solid rgba(162,155,254,0.3); }
+
+/* NUMBER BADGE */
+.num-badge { display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;font-weight:700;font-size:14px;font-family:var(--mono); }
+.nb-green { background:rgba(0,184,148,0.15);color:var(--green); }
+.nb-red { background:rgba(214,48,49,0.15);color:var(--red); }
+.nb-violet { background:rgba(162,155,254,0.15);color:var(--violet); }
+
+/* TABLE */
+.tbl-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th { padding: 10px 14px; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid var(--border); text-align: left; font-family: var(--mono); }
+td { padding: 11px 14px; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+tr:hover td { background: rgba(108,92,231,0.05); }
+tr:last-child td { border-bottom: none; }
+
+/* STAT CARDS */
+.stat-val { font-family: var(--mono); font-size: 2.2rem; font-weight: 900; margin-top: 4px; }
+
+/* BAR CHART */
+.bar-row { display:flex;align-items:center;gap:10px;margin-bottom:8px; }
+.bar-lbl { font-size:12px;font-family:var(--mono);width:55px;text-align:right;color:var(--muted); }
+.bar-track { flex:1;height:8px;background:rgba(255,255,255,0.05);border-radius:4px;overflow:hidden; }
+.bar-fill { height:100%;border-radius:4px;transition:width 0.6s ease; }
+.bar-cnt { font-size:11px;color:var(--muted);font-family:var(--mono);width:20px; }
+
+/* SOURCE BADGE */
+.source-tag { display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:3px 10px;border-radius:20px;margin-bottom:12px; }
+.src-real { background:rgba(0,184,148,0.1);color:var(--green);border:1px solid rgba(0,184,148,0.3); }
+.src-fake { background:rgba(108,92,231,0.1);color:var(--accent);border:1px solid rgba(108,92,231,0.3); }
+
+/* LOADING */
+.loading { text-align:center;padding:2.5rem;color:var(--muted);font-size:13px; }
+.spinner { display:inline-block;width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite; }
+@keyframes spin { to{transform:rotate(360deg)} }
+
+/* API DOCS */
+.endpoint-row { background:var(--surface);border-radius:8px;padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;font-family:var(--mono);font-size:12px; }
+.method { padding:3px 8px;border-radius:4px;font-size:11px;font-weight:700; }
+.m-get { background:rgba(0,184,148,0.15);color:var(--green); }
+.ep-path { color:var(--text);flex:1; }
+.ep-desc { color:var(--muted);font-family:var(--sans);font-size:11px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><span class="g">W</span><span class="r">i</span><span class="v">n</span>Go API</div>
+  <div class="live-badge">LIVE</div>
+</header>
+
+<div class="tabs-wrap">
+  <button class="tab-btn active" onclick="switchTab('draw')">🎯 Live Draw</button>
+  <button class="tab-btn" onclick="switchTab('history')">📋 History</button>
+  <button class="tab-btn" onclick="switchTab('stats')">📊 Stats</button>
+  <button class="tab-btn" onclick="switchTab('proxy')">🔗 Proxy (Real Data)</button>
+  <button class="tab-btn" onclick="switchTab('docs')">📖 API Docs</button>
+</div>
+
+<!-- ======================== TAB: DRAW ======================== -->
+<div class="tab-content active" id="tab-draw">
+<div class="main">
+  <div class="controls">
+    <select id="d-game"><option value="WinGo">WinGo</option><option value="K3">K3</option><option value="5D">5D</option><option value="TrxWin">TrxWin</option></select>
+    <select id="d-dur"><option value="30S">30 Seconds</option><option value="1Min">1 Min</option><option value="3Min">3 Min</option><option value="5Min">5 Min</option><option value="10Min">10 Min</option></select>
+    <button class="btn btn-primary" onclick="doDraw()">🎲 Draw Now</button>
+    <button class="btn" id="autoDrawBtn" onclick="toggleAutoDraw()">Auto: OFF</button>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Current Issue</div>
+      <div class="countdown-wrap">
+        <div class="countdown-label">Next Draw In</div>
+        <div class="countdown-num" id="countdown">--</div>
+        <div class="issue-label" id="currentIssue">Loading...</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Latest Result</div>
+      <div id="resultBall" class="result-ball ball-green">?</div>
+      <div style="text-align:center;">
+        <div id="resultColors" style="margin-bottom:8px;">—</div>
+        <div style="font-size:12px;color:var(--muted);font-family:var(--mono);" id="resultIssue">—</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:1rem;">
+    <div class="card-title">Recent Draws</div>
+    <div id="recentDraws" class="loading"><span class="spinner"></span></div>
+  </div>
+</div>
+</div>
+
+<!-- ======================== TAB: HISTORY ======================== -->
+<div class="tab-content" id="tab-history">
+<div class="main">
+  <div class="controls">
+    <select id="h-game"><option value="WinGo">WinGo</option><option value="K3">K3</option><option value="5D">5D</option><option value="TrxWin">TrxWin</option></select>
+    <select id="h-dur"><option value="30S">30 Seconds</option><option value="1Min">1 Min</option><option value="3Min">3 Min</option><option value="5Min">5 Min</option><option value="10Min">10 Min</option></select>
+    <select id="h-source"><option value="auto">Auto (Real → Fake)</option><option value="real">Real Data Only</option><option value="fake">Generated Data</option></select>
+    <button class="btn btn-primary" onclick="loadHistory()">Load History</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">History Results</div>
+    <div id="historyTable" class="loading"><span class="spinner"></span></div>
+  </div>
+</div>
+</div>
+
+<!-- ======================== TAB: STATS ======================== -->
+<div class="tab-content" id="tab-stats">
+<div class="main">
+  <div class="controls">
+    <select id="s-game"><option value="WinGo">WinGo</option><option value="K3">K3</option><option value="5D">5D</option><option value="TrxWin">TrxWin</option></select>
+    <select id="s-dur"><option value="30S">30 Seconds</option><option value="1Min">1 Min</option><option value="3Min">3 Min</option><option value="5Min">5 Min</option><option value="10Min">10 Min</option></select>
+    <button class="btn btn-primary" onclick="loadStats()">Load Stats</button>
+  </div>
+
+  <div class="grid-3" id="statCards" style="margin-bottom:1rem;">
+    <div class="card"><div class="card-title">Green</div><div class="stat-val" id="st-green" style="color:var(--green)">—</div></div>
+    <div class="card"><div class="card-title">Red</div><div class="stat-val" id="st-red" style="color:var(--red)">—</div></div>
+    <div class="card"><div class="card-title">Violet</div><div class="stat-val" id="st-violet" style="color:var(--violet)">—</div></div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Number Frequency</div>
+      <div id="numChart"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Color Distribution</div>
+      <div id="colorChart"></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ======================== TAB: PROXY ======================== -->
+<div class="tab-content" id="tab-proxy">
+<div class="main">
+  <div class="controls">
+    <select id="p-game"><option value="WinGo">WinGo</option><option value="K3">K3</option><option value="5D">5D</option><option value="TrxWin">TrxWin</option></select>
+    <select id="p-dur"><option value="30S">30 Seconds</option><option value="1Min">1 Min</option><option value="3Min">3 Min</option><option value="5Min">5 Min</option><option value="10Min">10 Min</option></select>
+    <button class="btn btn-primary" onclick="loadProxy()">Fetch Real Data</button>
+  </div>
+  <div class="card">
+    <div class="card-title">Real Data from ar-lottery01.com</div>
+    <div id="proxyResult" class="loading"><span class="spinner"></span></div>
+  </div>
+</div>
+</div>
+
+<!-- ======================== TAB: DOCS ======================== -->
+<div class="tab-content" id="tab-docs">
+<div class="main">
+  <div class="card" style="margin-bottom:1rem;">
+    <div class="card-title">API Endpoints</div>
+    <div class="endpoint-row"><span class="method m-get">GET</span><span class="ep-path">/api/games</span><span class="ep-desc">All available games & durations</span></div>
+    <div class="endpoint-row"><span class="method m-get">GET</span><span class="ep-path">/api/history/{game}/{duration}?source=auto</span><span class="ep-desc">History list (real or generated)</span></div>
+    <div class="endpoint-row"><span class="method m-get">GET</span><span class="ep-path">/api/current/{game}/{duration}</span><span class="ep-desc">Current issue & countdown</span></div>
+    <div class="endpoint-row"><span class="method m-get">GET</span><span class="ep-path">/api/draw/{game}/{duration}</span><span class="ep-desc">Own draw system (random result)</span></div>
+    <div class="endpoint-row"><span class="method m-get">GET</span><span class="ep-path">/api/stats/{game}/{duration}</span><span class="ep-desc">Color & number frequency stats</span></div>
+    <div class="endpoint-row"><span class="method m-get">GET</span><span class="ep-path">/api/proxy/{game}/{duration}</span><span class="ep-desc">Proxy real data from ar-lottery01.com</span></div>
+    <div class="endpoint-row"><span class="method m-get">GET</span><span class="ep-path">/api/health</span><span class="ep-desc">Server health check</span></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Color Rules</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">
+      <span class="pill pill-red">0 = Red + Violet</span>
+      <span class="pill pill-green">1 = Green</span>
+      <span class="pill pill-red">2 = Red</span>
+      <span class="pill pill-green">3 = Green</span>
+      <span class="pill pill-red">4 = Red</span>
+      <span class="pill pill-violet">5 = Green + Violet</span>
+      <span class="pill pill-red">6 = Red</span>
+      <span class="pill pill-green">7 = Green</span>
+      <span class="pill pill-red">8 = Red</span>
+      <span class="pill pill-green">9 = Green</span>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+const BASE = window.location.origin;
+let autoDrawInterval = null;
+let isAutoDraw = false;
+let countdownInterval = null;
+let recentResults = [];
+
+// ============ TAB SWITCH ============
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+// ============ DRAW ============
+async function doDraw() {
+  const game = document.getElementById('d-game').value;
+  const dur = document.getElementById('d-dur').value;
+
+  try {
+    const res = await fetch(`${BASE}/api/draw/${game}/${dur}`);
+    const json = await res.json();
+    if (json.code !== 0) return;
+
+    const result = json.data.result;
+    const num = parseInt(result.number);
+    const colors = result.color.split(',');
+    const mainColor = colors.includes('violet') && colors.length > 1 ? colors[0] : colors[0];
+
+    const ball = document.getElementById('resultBall');
+    ball.textContent = result.number;
+    ball.className = 'result-ball ball-' + mainColor + ' ball-spin';
+    setTimeout(() => ball.classList.remove('ball-spin'), 500);
+
+    document.getElementById('resultColors').innerHTML = colors.map(c =>
+      `<span class="pill pill-${c}">${c}</span>`
+    ).join('');
+    document.getElementById('resultIssue').textContent = json.data.issueNumber;
+
+    // Recent list
+    recentResults.unshift({...result, issueNumber: json.data.issueNumber});
+    if (recentResults.length > 10) recentResults.pop();
+    renderRecentDraws();
+  } catch(e) {}
+}
+
+function renderRecentDraws() {
+  if (recentResults.length === 0) {
+    document.getElementById('recentDraws').innerHTML = '<div class="loading">Draw করলে এখানে দেখাবে</div>';
+    return;
+  }
+  const rows = recentResults.map(r => {
+    const colors = r.color.split(',');
+    const cls = colors.includes('violet') ? 'nb-violet' : colors[0] === 'green' ? 'nb-green' : 'nb-red';
+    return `<tr>
+      <td><span style="font-family:var(--mono);font-size:11px;color:var(--muted);">${r.issueNumber}</span></td>
+      <td><span class="num-badge ${cls}">${r.number}</span></td>
+      <td>${colors.map(c=>`<span class="pill pill-${c}">${c}</span>`).join('')}</td>
+      <td><span style="color:var(--muted);font-size:12px;">${r.bigSmall || '—'}</span></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('recentDraws').innerHTML = `
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Issue</th><th>Number</th><th>Color</th><th>Big/Small</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
+}
+
+function toggleAutoDraw() {
+  isAutoDraw = !isAutoDraw;
+  const btn = document.getElementById('autoDrawBtn');
+  if (isAutoDraw) {
+    btn.textContent = 'Auto: ON';
+    btn.style.borderColor = 'var(--green)';
+    btn.style.color = 'var(--green)';
+    doDraw();
+    autoDrawInterval = setInterval(doDraw, 5000);
+  } else {
+    btn.textContent = 'Auto: OFF';
+    btn.style.borderColor = '';
+    btn.style.color = '';
+    clearInterval(autoDrawInterval);
+  }
+}
+
+async function updateCountdown() {
+  const game = document.getElementById('d-game').value;
+  const dur = document.getElementById('d-dur').value;
+  try {
+    const res = await fetch(`${BASE}/api/current/${game}/${dur}`);
+    const json = await res.json();
+    if (json.code !== 0) return;
+    document.getElementById('currentIssue').textContent = 'Issue: ' + json.data.issueNumber;
+
+    let remaining = json.data.timeRemaining;
+    clearInterval(countdownInterval);
+    countdownInterval = setInterval(() => {
+      remaining--;
+      if (remaining <= 0) {
+        remaining = json.data.durationSeconds;
+      }
+      const m = Math.floor(remaining / 60);
+      const s = remaining % 60;
+      document.getElementById('countdown').textContent = m > 0
+        ? `${m}:${String(s).padStart(2,'0')}`
+        : String(s).padStart(2, '0');
+    }, 1000);
+  } catch(e) {}
+}
+
+// ============ HISTORY ============
+async function loadHistory() {
+  const game = document.getElementById('h-game').value;
+  const dur = document.getElementById('h-dur').value;
+  const src = document.getElementById('h-source').value;
+
+  document.getElementById('historyTable').innerHTML = '<div class="loading"><span class="spinner"></span></div>';
+
+  try {
+    const res = await fetch(`${BASE}/api/history/${game}/${dur}?source=${src}&pageSize=20`);
+    const json = await res.json();
+    if (json.code !== 0) { document.getElementById('historyTable').innerHTML = '<div class="loading">Error</div>'; return; }
+
+    const list = json.data?.list || [];
+    const srcTag = json.dataSource === 'real'
+      ? '<span class="source-tag src-real">✓ Real Data</span>'
+      : '<span class="source-tag src-fake">⚡ Generated</span>';
+
+    const rows = list.map(item => {
+      const colors = (item.color || '').split(',');
+      const cls = colors.includes('violet') ? 'nb-violet' : colors[0] === 'green' ? 'nb-green' : 'nb-red';
+      return `<tr>
+        <td><span style="font-family:var(--mono);font-size:11px;color:var(--muted);">${item.issueNumber}</span></td>
+        <td><span class="num-badge ${cls}">${item.number}</span></td>
+        <td>${colors.map(c=>`<span class="pill pill-${c}">${c}</span>`).join('')}</td>
+        <td><span style="font-family:var(--mono);color:var(--muted);font-size:12px;">${item.premium || '—'}</span></td>
+      </tr>`;
+    }).join('');
+
+    document.getElementById('historyTable').innerHTML = `
+      ${srcTag}
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Issue</th><th>Number</th><th>Color</th><th>Premium</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>`;
+  } catch(e) {
+    document.getElementById('historyTable').innerHTML = '<div class="loading">Error fetching data</div>';
+  }
+}
+
+// ============ STATS ============
+async function loadStats() {
+  const game = document.getElementById('s-game').value;
+  const dur = document.getElementById('s-dur').value;
+
+  try {
+    const res = await fetch(`${BASE}/api/stats/${game}/${dur}`);
+    const json = await res.json();
+    if (json.code !== 0) return;
+
+    const cf = json.stats.colorFrequency;
+    const nf = json.stats.numberFrequency;
+
+    document.getElementById('st-green').textContent = cf.green || 0;
+    document.getElementById('st-red').textContent = cf.red || 0;
+    document.getElementById('st-violet').textContent = cf.violet || 0;
+
+    // Number chart
+    const maxN = Math.max(...Object.values(nf), 1);
+    document.getElementById('numChart').innerHTML = [0,1,2,3,4,5,6,7,8,9].map(n => {
+      const cnt = nf[String(n)] || 0;
+      const pct = Math.round(cnt / maxN * 100);
+      const color = n===0||n===5 ? 'var(--violet)' : n%2===0 ? 'var(--red)' : 'var(--green)';
+      return `<div class="bar-row">
+        <div class="bar-lbl">${n}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color};"></div></div>
+        <div class="bar-cnt">${cnt}</div>
+      </div>`;
+    }).join('');
+
+    // Color chart
+    const maxC = Math.max(...Object.values(cf), 1);
+    const cColors = { green:'var(--green)', red:'var(--red)', violet:'var(--violet)' };
+    document.getElementById('colorChart').innerHTML = Object.entries(cf)
+      .sort((a,b)=>b[1]-a[1])
+      .map(([c,cnt]) => {
+        const pct = Math.round(cnt / maxC * 100);
+        return `<div class="bar-row">
+          <div class="bar-lbl">${c}</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${cColors[c]||'var(--accent)'};"></div></div>
+          <div class="bar-cnt">${cnt}</div>
+        </div>`;
+      }).join('');
+  } catch(e) {}
+}
+
+// ============ PROXY ============
+async function loadProxy() {
+  const game = document.getElementById('p-game').value;
+  const dur = document.getElementById('p-dur').value;
+  document.getElementById('proxyResult').innerHTML = '<div class="loading"><span class="spinner"></span> ar-lottery01.com থেকে fetch করছি...</div>';
+
+  try {
+    const res = await fetch(`${BASE}/api/proxy/${game}/${dur}`);
+    const json = await res.json();
+
+    if (json.code !== 0) {
+      document.getElementById('proxyResult').innerHTML = '<div class="loading">Real data unavailable</div>';
+      return;
+    }
+
+    const list = json.data?.list || [];
+    const rows = list.map(item => {
+      const colors = (item.color || '').split(',');
+      const cls = colors.includes('violet') ? 'nb-violet' : colors[0] === 'green' ? 'nb-green' : 'nb-red';
+      return `<tr>
+        <td><span style="font-family:var(--mono);font-size:11px;color:var(--muted);">${item.issueNumber}</span></td>
+        <td><span class="num-badge ${cls}">${item.number}</span></td>
+        <td>${colors.map(c=>`<span class="pill pill-${c}">${c}</span>`).join('')}</td>
+      </tr>`;
+    }).join('');
+
+    document.getElementById('proxyResult').innerHTML = `
+      <span class="source-tag src-real">✓ Live from ar-lottery01.com</span>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Issue</th><th>Number</th><th>Color</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>`;
+  } catch(e) {
+    document.getElementById('proxyResult').innerHTML = '<div class="loading">Error: ' + e.message + '</div>';
+  }
+}
+
+// ============ INIT ============
+renderRecentDraws();
+updateCountdown();
+setInterval(updateCountdown, 30000);
+</script>
+</body>
+</html>
